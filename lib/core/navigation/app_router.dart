@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_project_spending_management/core/di/injection.dart';
 import 'package:mobile_project_spending_management/domain/entities/transaction.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_bloc.dart';
+import 'package:mobile_project_spending_management/presentation/bloc/categories/category_bloc.dart';
 import 'package:mobile_project_spending_management/presentation/screens/home/home_screen.dart';
 import 'package:mobile_project_spending_management/presentation/screens/transactions/transaction_list_screen.dart';
 import 'package:mobile_project_spending_management/presentation/screens/transactions/add_transaction_screen.dart';
@@ -11,6 +12,7 @@ import 'package:mobile_project_spending_management/presentation/screens/transact
 
 class AppRouter {
   static GoRouter router = GoRouter(
+    debugLogDiagnostics: true,
     initialLocation: '/',
     routes: [
       GoRoute(
@@ -29,8 +31,11 @@ class AppRouter {
       GoRoute(
         path: '/transactions/add',
         name: 'add-transaction',
-        builder: (context, state) => BlocProvider(
-          create: (context) => getIt<TransactionBloc>(),
+        builder: (context, state) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => getIt<TransactionBloc>()),
+            BlocProvider(create: (_) => getIt<CategoryBloc>()),
+          ],
           child: const AddTransactionScreen(),
         ),
       ),
@@ -44,8 +49,11 @@ class AppRouter {
               body: Center(child: Text('Giao dịch không tìm thấy')),
             );
           }
-          return BlocProvider(
-            create: (context) => getIt<TransactionBloc>(),
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => getIt<TransactionBloc>()),
+              BlocProvider(create: (_) => getIt<CategoryBloc>()),
+            ],
             child: EditTransactionScreen(transaction: transaction),
           );
         },

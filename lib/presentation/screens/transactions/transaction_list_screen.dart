@@ -20,12 +20,16 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   late DateTime _endDate;
   String _filterType = 'all'; // 'all', 'income', 'expense'
   String _searchQuery = '';
+  late List<DateTime> _months; // Month anchors (first day of month)
+  int _selectedMonthIndex = 0; // 0 = this month
 
   @override
   void initState() {
     super.initState();
-    _startDate = DateTime.now().startOfDay;
-    _endDate = DateTime.now().endOfDay;
+    final now = DateTime.now();
+    _months = List.generate(12, (i) => DateTime(now.year, now.month - i, 1));
+    _startDate = now.startOfMonth;
+    _endDate = now.endOfMonth;
     _loadTransactions();
   }
 
@@ -61,7 +65,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () => context.goNamed('home'),
         ),
       ),
       body: Column(
@@ -99,67 +103,38 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               ),
             ),
           ),
-          // Date Range Selector
+          // Month Selector
           Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingMd),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _startDate,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) {
-                      setState(() => _startDate = picked);
+            padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+            child: SizedBox(
+              height: 44,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _months.length,
+                separatorBuilder: (context, index) => const SizedBox(width: AppTheme.spacingSm),
+                itemBuilder: (context, index) {
+                  final month = _months[index];
+                  final label = index == 0
+                      ? 'Tháng này'
+                      : index == 1
+                          ? 'Tháng trước'
+                          : month.toMonthYearString();
+                  final selected = index == _selectedMonthIndex;
+                  return ChoiceChip(
+                    selected: selected,
+                    label: Text(label),
+                    onSelected: (value) {
+                      if (!value) return;
+                      setState(() {
+                        _selectedMonthIndex = index;
+                        _startDate = month.startOfMonth;
+                        _endDate = month.endOfMonth;
+                      });
                       _loadTransactions();
-                    }
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Từ ngày', style: TextStyle(fontSize: AppTheme.fontSizeSm)),
-                      Text(
-                        _startDate.toDateString(),
-                        style: const TextStyle(
-                          fontSize: AppTheme.fontSizeLg,
-                          fontWeight: AppTheme.fontWeightSemiBold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _endDate,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) {
-                      setState(() => _endDate = picked);
-                      _loadTransactions();
-                    }
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text('Đến ngày', style: TextStyle(fontSize: AppTheme.fontSizeSm)),
-                      Text(
-                        _endDate.toDateString(),
-                        style: const TextStyle(
-                          fontSize: AppTheme.fontSizeLg,
-                          fontWeight: AppTheme.fontWeightSemiBold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                    },
+                  );
+                },
+              ),
             ),
           ),
           // Filter Chips
@@ -183,7 +158,22 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           const SizedBox(height: AppTheme.spacingMd),
           // Transaction List
           Expanded(
-            child: BlocBuilder<TransactionBloc, TransactionState>(
+            child: BlocConsumer<TransactionBloc, TransactionState>(
+              listener: (context, state) {
+                if (state is TransactionDeleted || state is TransactionUpdated) {
+                  _loadTransactions();
+                }
+                if (state is TransactionDeleted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Xóa giao dịch thành công')),
+                  );
+                }
+                if (state is TransactionUpdated) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Cập nhật giao dịch thành công')),
+                  );
+                }
+              },
               builder: (context, state) {
                 if (state is TransactionLoading) {
                   return const Center(
@@ -226,9 +216,12 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     itemBuilder: (context, index) {
                       final transaction = state.transactions[index];
                       final isIncome = transaction.type == 'income';
-                      return GestureDetector(
-                        onTap: () => context.goNamed(
+                      return InkWell(
+                        onTap: () => context.pushNamed(
                           'edit-transaction',
+                          pathParameters: {
+                            'id': transaction.id!.toString(),
+                          },
                           extra: transaction,
                         ),
                         child: Card(
@@ -259,13 +252,25 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                                     ],
                                   ),
                                 ),
-                                Text(
-                                  '${isIncome ? '+' : '-'}${transaction.amount.toCurrency()}',
-                                  style: TextStyle(
-                                    fontWeight: AppTheme.fontWeightSemiBold,
-                                    color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
-                                    fontSize: AppTheme.fontSizeLg,
-                                  ),
+                                const SizedBox(width: AppTheme.spacingMd),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '${isIncome ? '+' : '-'}${transaction.amount.toCurrency()}',
+                                      style: TextStyle(
+                                        fontWeight: AppTheme.fontWeightSemiBold,
+                                        color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
+                                        fontSize: AppTheme.fontSizeLg,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppTheme.spacingXs),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      size: 16,
+                                      color: AppTheme.textSecondaryColor,
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

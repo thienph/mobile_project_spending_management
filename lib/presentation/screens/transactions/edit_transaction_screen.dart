@@ -99,17 +99,18 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   void _deleteTransaction() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      useRootNavigator: false,
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Xóa giao dịch'),
         content: const Text('Bạn có chắc muốn xóa giao dịch này?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Hủy'),
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
               context.read<TransactionBloc>().add(DeleteTransactionEvent(widget.transaction.id!));
             },
             child: const Text('Xóa', style: TextStyle(color: AppTheme.errorColor)),
