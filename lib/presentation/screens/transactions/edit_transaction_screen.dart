@@ -11,28 +11,36 @@ import 'package:mobile_project_spending_management/presentation/bloc/transaction
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_state.dart';
 import 'package:mobile_project_spending_management/presentation/widgets/category_picker.dart';
 
-class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key});
+class EditTransactionScreen extends StatefulWidget {
+  final Transaction transaction;
+
+  const EditTransactionScreen({
+    super.key,
+    required this.transaction,
+  });
 
   @override
-  State<AddTransactionScreen> createState() => _AddTransactionScreenState();
+  State<EditTransactionScreen> createState() => _EditTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen> {
+class _EditTransactionScreenState extends State<EditTransactionScreen> {
   late TextEditingController _descriptionController;
   late TextEditingController _amountController;
   late TextEditingController _noteController;
 
-  DateTime _selectedDate = DateTime.now();
-  String _transactionType = 'expense'; // 'income' or 'expense'
-  int? _selectedCategoryId;
+  late DateTime _selectedDate;
+  late String _transactionType;
+  late int _selectedCategoryId;
 
   @override
   void initState() {
     super.initState();
-    _descriptionController = TextEditingController();
-    _amountController = TextEditingController();
-    _noteController = TextEditingController();
+    _descriptionController = TextEditingController(text: widget.transaction.description);
+    _amountController = TextEditingController(text: widget.transaction.amount.toString());
+    _noteController = TextEditingController(text: widget.transaction.note ?? '');
+    _selectedDate = widget.transaction.date;
+    _transactionType = widget.transaction.type;
+    _selectedCategoryId = widget.transaction.categoryId;
   }
 
   @override
@@ -71,44 +79,73 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       return;
     }
 
-    if (_selectedCategoryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn danh mục')),
-      );
-      return;
-    }
-
     final transaction = Transaction(
+      id: widget.transaction.id,
       amount: amount,
       description: _descriptionController.text,
       date: _selectedDate,
-      categoryId: _selectedCategoryId!,
+      categoryId: _selectedCategoryId,
       type: _transactionType,
       note: _noteController.text.isEmpty ? null : _noteController.text,
-      isRecurring: false,
-      createdAt: DateTime.now(),
+      isRecurring: widget.transaction.isRecurring,
+      recurringTransactionId: widget.transaction.recurringTransactionId,
+      createdAt: widget.transaction.createdAt,
       updatedAt: DateTime.now(),
     );
 
-    context.read<TransactionBloc>().add(AddTransactionEvent(transaction));
+    context.read<TransactionBloc>().add(UpdateTransactionEvent(transaction));
+  }
+
+  void _deleteTransaction() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xóa giao dịch'),
+        content: const Text('Bạn có chắc muốn xóa giao dịch này?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<TransactionBloc>().add(DeleteTransactionEvent(widget.transaction.id!));
+            },
+            child: const Text('Xóa', style: TextStyle(color: AppTheme.errorColor)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thêm giao dịch'),
+        title: const Text('Sửa giao dịch'),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: AppTheme.errorColor),
+            onPressed: _deleteTransaction,
+          ),
+        ],
       ),
       body: BlocListener<TransactionBloc, TransactionState>(
         listener: (context, state) {
-          if (state is TransactionAdded) {
+          if (state is TransactionUpdated) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Thêm giao dịch thành công')),
+              const SnackBar(content: Text('Cập nhật giao dịch thành công')),
+            );
+            context.pop();
+          } else if (state is TransactionDeleted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Xóa giao dịch thành công')),
             );
             context.pop();
           } else if (state is TransactionError) {
@@ -240,9 +277,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   transactionType: _transactionType,
                   selectedCategoryId: _selectedCategoryId,
                   onCategorySelected: (id, name) {
-                    setState(() {
-                      _selectedCategoryId = id;
-                    });
+                    setState(() => _selectedCategoryId = id);
                   },
                 ),
               ),
@@ -284,7 +319,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                               width: 24,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Thêm giao dịch'),
+                          : const Text('Cập nhật giao dịch'),
                     ),
                   );
                 },

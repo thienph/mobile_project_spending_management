@@ -19,6 +19,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   late DateTime _startDate;
   late DateTime _endDate;
   String _filterType = 'all'; // 'all', 'income', 'expense'
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -29,12 +30,22 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   }
 
   void _loadTransactions() {
-    context.read<TransactionBloc>().add(
-          LoadTransactions(
-            startDate: _startDate,
-            endDate: _endDate,
-          ),
-        );
+    if (_searchQuery.isNotEmpty) {
+      context.read<TransactionBloc>().add(
+            SearchTransactionsEvent(
+              query: _searchQuery,
+              startDate: _startDate,
+              endDate: _endDate,
+            ),
+          );
+    } else {
+      context.read<TransactionBloc>().add(
+            LoadTransactions(
+              startDate: _startDate,
+              endDate: _endDate,
+            ),
+          );
+    }
   }
 
   void _filterByType(String type) {
@@ -48,9 +59,46 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       appBar: AppBar(
         title: const Text('Giao dịch'),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: Column(
         children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.all(AppTheme.spacingMd),
+            child: TextField(
+              onChanged: (value) {
+                setState(() => _searchQuery = value);
+                _loadTransactions();
+              },
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm giao dịch...',
+                filled: true,
+                fillColor: AppTheme.backgroundColor,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          setState(() => _searchQuery = '');
+                          _loadTransactions();
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  borderSide: const BorderSide(color: AppTheme.borderColor),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spacingMd,
+                  vertical: AppTheme.spacingMd,
+                ),
+              ),
+            ),
+          ),
           // Date Range Selector
           Padding(
             padding: const EdgeInsets.all(AppTheme.spacingMd),
@@ -178,43 +226,49 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     itemBuilder: (context, index) {
                       final transaction = state.transactions[index];
                       final isIncome = transaction.type == 'income';
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppTheme.spacingMd),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      transaction.description ?? 'Giao dịch không tên',
-                                      style: const TextStyle(fontWeight: AppTheme.fontWeightSemiBold),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: AppTheme.spacingSm),
-                                    Text(
-                                      transaction.date.toDateString(),
-                                      style: const TextStyle(
-                                        fontSize: AppTheme.fontSizeSm,
-                                        color: AppTheme.textSecondaryColor,
+                      return GestureDetector(
+                        onTap: () => context.goNamed(
+                          'edit-transaction',
+                          extra: transaction,
+                        ),
+                        child: Card(
+                          margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppTheme.spacingMd),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        transaction.description ?? 'Giao dịch không tên',
+                                        style: const TextStyle(fontWeight: AppTheme.fontWeightSemiBold),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: AppTheme.spacingSm),
+                                      Text(
+                                        transaction.date.toDateString(),
+                                        style: const TextStyle(
+                                          fontSize: AppTheme.fontSizeSm,
+                                          color: AppTheme.textSecondaryColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                '${isIncome ? '+' : '-'}${transaction.amount.toCurrency()}',
-                                style: TextStyle(
-                                  fontWeight: AppTheme.fontWeightSemiBold,
-                                  color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
-                                  fontSize: AppTheme.fontSizeLg,
+                                Text(
+                                  '${isIncome ? '+' : '-'}${transaction.amount.toCurrency()}',
+                                  style: TextStyle(
+                                    fontWeight: AppTheme.fontWeightSemiBold,
+                                    color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
+                                    fontSize: AppTheme.fontSizeLg,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       );
