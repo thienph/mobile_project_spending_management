@@ -39,6 +39,9 @@ dependencies:
   flutter_bloc: ^8.1.6
   equatable: ^2.0.5
   
+  # Error Handling
+  dartz: ^0.10.1
+  
   # Database
   drift: ^2.20.3
   sqlite3_flutter_libs: ^0.5.24

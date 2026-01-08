@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:mobile_project_spending_management/core/di/injection.dart';
 import 'package:mobile_project_spending_management/core/navigation/app_router.dart';
 import 'package:mobile_project_spending_management/core/theme/app_theme.dart';

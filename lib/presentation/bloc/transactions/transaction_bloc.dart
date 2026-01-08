@@ -1,0 +1,106 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_project_spending_management/domain/usecases/transactions/add_transaction.dart';
+import 'package:mobile_project_spending_management/domain/usecases/transactions/delete_transaction.dart';
+import 'package:mobile_project_spending_management/domain/usecases/transactions/get_transactions.dart';
+import 'package:mobile_project_spending_management/domain/usecases/transactions/update_transaction.dart';
+import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_event.dart';
+import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_state.dart';
+
+class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
+  final GetTransactions getTransactions;
+  final AddTransaction addTransaction;
+  final UpdateTransaction updateTransaction;
+  final DeleteTransaction deleteTransaction;
+
+  TransactionBloc({
+    required this.getTransactions,
+    required this.addTransaction,
+    required this.updateTransaction,
+    required this.deleteTransaction,
+  }) : super(TransactionInitial()) {
+    on<LoadTransactions>(_onLoadTransactions);
+    on<AddTransactionEvent>(_onAddTransaction);
+    on<UpdateTransactionEvent>(_onUpdateTransaction);
+    on<DeleteTransactionEvent>(_onDeleteTransaction);
+    on<SearchTransactionsEvent>(_onSearchTransactions);
+  }
+
+  Future<void> _onLoadTransactions(
+    LoadTransactions event,
+    Emitter<TransactionState> emit,
+  ) async {
+    emit(TransactionLoading());
+
+    final result = await getTransactions(
+      startDate: event.startDate,
+      endDate: event.endDate,
+    );
+
+    result.fold(
+      (failure) => emit(TransactionError(failure.message)),
+      (transactions) => emit(TransactionLoaded(transactions)),
+    );
+  }
+
+  Future<void> _onAddTransaction(
+    AddTransactionEvent event,
+    Emitter<TransactionState> emit,
+  ) async {
+    final result = await addTransaction(event.transaction);
+
+    result.fold(
+      (failure) => emit(TransactionError(failure.message)),
+      (_) => emit(TransactionAdded()),
+    );
+  }
+
+  Future<void> _onUpdateTransaction(
+    UpdateTransactionEvent event,
+    Emitter<TransactionState> emit,
+  ) async {
+    final result = await updateTransaction(event.transaction);
+
+    result.fold(
+      (failure) => emit(TransactionError(failure.message)),
+      (_) => emit(TransactionUpdated()),
+    );
+  }
+
+  Future<void> _onDeleteTransaction(
+    DeleteTransactionEvent event,
+    Emitter<TransactionState> emit,
+  ) async {
+    final result = await deleteTransaction(event.id);
+
+    result.fold(
+      (failure) => emit(TransactionError(failure.message)),
+      (_) => emit(TransactionDeleted()),
+    );
+  }
+
+  Future<void> _onSearchTransactions(
+    SearchTransactionsEvent event,
+    Emitter<TransactionState> emit,
+  ) async {
+    emit(TransactionLoading());
+
+    final result = await getTransactions(
+      startDate: event.startDate,
+      endDate: event.endDate,
+    );
+
+    result.fold(
+      (failure) => emit(TransactionError(failure.message)),
+      (allTransactions) {
+        final filtered = allTransactions
+            .where((t) =>
+                (t.description?.toLowerCase().contains(event.query.toLowerCase()) ??
+                    false) ||
+                (t.note?.toLowerCase().contains(event.query.toLowerCase()) ?? false))
+            .toList();
+
+        emit(TransactionLoaded(filtered));
+      },
+    );
+  }
+}
