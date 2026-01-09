@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:collection/collection.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_project_spending_management/core/di/injection.dart';
 import 'package:mobile_project_spending_management/core/theme/app_theme.dart';
 import 'package:mobile_project_spending_management/core/utils/date_extensions.dart';
 import 'package:mobile_project_spending_management/core/utils/number_extensions.dart';
+import 'package:mobile_project_spending_management/domain/entities/category.dart';
 import 'package:mobile_project_spending_management/domain/entities/transaction.dart';
+import 'package:mobile_project_spending_management/domain/repositories/category_repository.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_bloc.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_event.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_state.dart';
 import 'package:mobile_project_spending_management/presentation/widgets/balance_summary_card.dart';
+import 'package:mobile_project_spending_management/presentation/widgets/category_transaction_group.dart';
 
 class TransactionListScreen extends StatefulWidget {
   const TransactionListScreen({super.key});
@@ -27,6 +31,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   late List<GlobalKey> _monthKeys;
   int _selectedMonthIndex = 0; // 0 = this month
   Map<String, double>? _balance; // Cache the balance
+  Map<int, Category> _categoriesCache = {}; // Cache categories
 
   @override
   void initState() {
@@ -36,7 +41,21 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     _monthKeys = List.generate(12, (_) => GlobalKey());
     _startDate = now.startOfMonth;
     _endDate = now.endOfMonth;
+    _loadCategories();
     _loadTransactions();
+  }
+
+  Future<void> _loadCategories() async {
+    final categoryRepository = getIt<CategoryRepository>();
+    final result = await categoryRepository.getAllCategories();
+    result.fold(
+      (failure) => null,
+      (categories) {
+        setState(() {
+          _categoriesCache = {for (var cat in categories) cat.id: cat};
+        });
+      },
+    );
   }
 
   void _loadTransactions() {
@@ -358,77 +377,96 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
-  /// Build transaction list grouped by date
+  /// Build transaction list grouped by date and category
   Widget _buildGroupedTransactionList(List<Transaction> transactions) {
-    final groupedTransactions = groupBy(
+    if (_categoriesCache.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Group by date first
+    final groupedByDate = groupBy(
       transactions,
       (Transaction t) => t.date.startOfDay,
     );
 
-    final sortedKeys = groupedTransactions.keys.toList()
+    final sortedDates = groupedByDate.keys.toList()
       ..sort((a, b) => b.compareTo(a));
 
     return ListView.builder(
-      itemCount: sortedKeys.length,
+      itemCount: sortedDates.length,
       padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
       itemBuilder: (context, index) {
-        final date = sortedKeys[index];
-        final transactionsOnDate = groupedTransactions[date]!;
+        final date = sortedDates[index];
+        final transactionsOnDate = groupedByDate[date]!;
+
+        // Group by category within each date
+        final groupedByCategory = groupBy(
+          transactionsOnDate,
+          (Transaction t) => t.categoryId,
+        );
+
+        // Calculate total for the day
+        final dayTotal = transactionsOnDate.fold<double>(
+          0.0,
+          (sum, t) => sum + (t.type == 'income' ? t.amount : -t.amount),
+        );
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Date Header with total
             Padding(
-              padding: const EdgeInsets.only(top: AppTheme.spacingLg, bottom: AppTheme.spacingSm),
-              child: Text(
-                date.isToday ? 'Hôm nay' : (date.isYesterday ? 'Hôm qua' : date.toDateString()),
-                style: const TextStyle(
-                  fontWeight: AppTheme.fontWeightSemiBold,
-                  color: AppTheme.textSecondaryColor,
-                ),
+              padding: const EdgeInsets.only(
+                top: AppTheme.spacingLg,
+                bottom: AppTheme.spacingSm,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    date.isToday
+                        ? 'Hôm nay'
+                        : (date.isYesterday ? 'Hôm qua' : date.toDateString()),
+                    style: const TextStyle(
+                      fontSize: AppTheme.fontSizeLg,
+                      fontWeight: AppTheme.fontWeightSemiBold,
+                      color: AppTheme.textPrimaryColor,
+                    ),
+                  ),
+                  Text(
+                    dayTotal >= 0
+                        ? '+${dayTotal.toCurrency()}'
+                        : dayTotal.toCurrency(),
+                    style: TextStyle(
+                      fontSize: AppTheme.fontSizeMd,
+                      fontWeight: AppTheme.fontWeightSemiBold,
+                      color: dayTotal >= 0
+                          ? AppTheme.incomeColor
+                          : AppTheme.expenseColor,
+                    ),
+                  ),
+                ],
               ),
             ),
-            ...transactionsOnDate.map((transaction) => _buildTransactionItem(transaction)),
+            // Category Groups
+            ...groupedByCategory.entries.map((entry) {
+              final categoryId = entry.key;
+              final categoryTransactions = entry.value;
+              final category = _categoriesCache[categoryId];
+
+              if (category == null) {
+                return const SizedBox.shrink();
+              }
+
+              return CategoryTransactionGroup(
+                category: category,
+                transactions: categoryTransactions,
+                onTransactionChanged: _loadTransactions,
+              );
+            }),
           ],
         );
       },
-    );
-  }
-
-  Widget _buildTransactionItem(Transaction transaction) {
-    final isIncome = transaction.type == 'income';
-    return Card(
-      margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
-      child: ListTile(
-        leading: CircleAvatar(
-          // TODO: Replace with category icon
-          child: Icon(isIncome ? Icons.arrow_downward : Icons.arrow_upward),
-        ),
-        title: Text(
-          transaction.description ?? 'Giao dịch không tên',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(transaction.date.toTimeString()), // Or category name
-        trailing: Text(
-          '${isIncome ? '+' : '-'}${transaction.amount.toCurrency()}',
-          style: TextStyle(
-            fontWeight: AppTheme.fontWeightSemiBold,
-            color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
-            fontSize: AppTheme.fontSizeLg,
-          ),
-        ),
-        onTap: () async {
-          final result = await context.pushNamed(
-            'edit-transaction',
-            pathParameters: {'id': transaction.id!.toString()},
-            extra: transaction,
-          );
-          if (result == true && mounted) {
-            _loadTransactions();
-          }
-        },
-      ),
     );
   }
 }

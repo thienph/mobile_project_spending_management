@@ -167,8 +167,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
     try {
       final models = await (database.select(database.transactions)
             ..where((t) =>
-                (t.description.like('%$query%') |
-                    t.note.like('%$query%')) &
+                t.description.like('%$query%') &
                 t.date.isBiggerOrEqualValue(startDate) &
                 t.date.isSmallerOrEqualValue(endDate))
             ..orderBy([(t) => drift.OrderingTerm(expression: t.date, mode: drift.OrderingMode.desc)]))

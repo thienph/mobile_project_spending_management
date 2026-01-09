@@ -7,7 +7,6 @@ class Transaction extends Equatable {
   final DateTime date;
   final int categoryId;
   final String type; // 'income' or 'expense'
-  final String? note;
   final bool isRecurring;
   final int? recurringTransactionId;
   final DateTime createdAt;
@@ -20,7 +19,6 @@ class Transaction extends Equatable {
     required this.date,
     required this.categoryId,
     required this.type,
-    this.note,
     this.isRecurring = false,
     this.recurringTransactionId,
     required this.createdAt,
@@ -35,7 +33,6 @@ class Transaction extends Equatable {
         date,
         categoryId,
         type,
-        note,
         isRecurring,
         recurringTransactionId,
         createdAt,

@@ -11,7 +11,6 @@ class TransactionModel {
   final DateTime date;
   final int categoryId;
   final String type;
-  final String? note;
   final bool isRecurring;
   final int? recurringTransactionId;
   final DateTime createdAt;
@@ -24,7 +23,6 @@ class TransactionModel {
     required this.date,
     required this.categoryId,
     required this.type,
-    this.note,
     this.isRecurring = false,
     this.recurringTransactionId,
     required this.createdAt,
@@ -40,7 +38,6 @@ class TransactionModel {
       date: row.date,
       categoryId: row.categoryId,
       type: row.type,
-      note: row.note,
       isRecurring: row.isRecurring,
       recurringTransactionId: row.recurringTransactionId,
       createdAt: row.createdAt,
@@ -57,7 +54,6 @@ class TransactionModel {
       date: drift.Value(date),
       categoryId: drift.Value(categoryId),
       type: drift.Value(type),
-      note: note != null ? drift.Value(note) : const drift.Value.absent(),
       isRecurring: drift.Value(isRecurring),
       recurringTransactionId: recurringTransactionId != null
           ? drift.Value(recurringTransactionId)
@@ -76,7 +72,6 @@ class TransactionModel {
       date: date,
       categoryId: categoryId,
       type: type,
-      note: note,
       isRecurring: isRecurring,
       recurringTransactionId: recurringTransactionId,
       createdAt: createdAt,
@@ -93,7 +88,6 @@ class TransactionModel {
       date: transaction.date,
       categoryId: transaction.categoryId,
       type: transaction.type,
-      note: transaction.note,
       isRecurring: transaction.isRecurring,
       recurringTransactionId: transaction.recurringTransactionId,
       createdAt: transaction.createdAt,

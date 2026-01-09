@@ -25,7 +25,6 @@ class Transactions extends Table {
   DateTimeColumn get date => dateTime()();
   IntColumn get categoryId => integer().references(Categories, #id)();
   TextColumn get type => text()(); // 'income' or 'expense'
-  TextColumn get note => text().nullable()();
   BoolColumn get isRecurring => boolean().withDefault(const Constant(false))();
   IntColumn get recurringTransactionId => integer().nullable().references(RecurringTransactions, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -85,7 +84,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -96,7 +95,11 @@ class AppDatabase extends _$AppDatabase {
         await _insertDefaultCategories();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // Handle future migrations here
+        if (from == 1 && to == 2) {
+          // Remove 'note' column from transactions table
+          // Drift will handle this automatically by recreating the table
+          await m.recreateAllViews();
+        }
       },
     );
   }

@@ -27,7 +27,6 @@ class EditTransactionScreen extends StatefulWidget {
 class _EditTransactionScreenState extends State<EditTransactionScreen> {
   late TextEditingController _descriptionController;
   late TextEditingController _amountController;
-  late TextEditingController _noteController;
 
   late DateTime _selectedDate;
   late String _transactionType;
@@ -48,7 +47,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       buffer.write(amountStr[i]);
     }
     _amountController = TextEditingController(text: buffer.toString());
-    _noteController = TextEditingController(text: widget.transaction.note ?? '');
     _selectedDate = widget.transaction.date;
     _transactionType = widget.transaction.type;
     _selectedCategoryId = widget.transaction.categoryId;
@@ -63,7 +61,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     _amountController.removeListener(_onFieldChanged);
     _descriptionController.dispose();
     _amountController.dispose();
-    _noteController.dispose();
     super.dispose();
   }
 
@@ -109,7 +106,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       date: _selectedDate,
       categoryId: _selectedCategoryId,
       type: _transactionType,
-      note: _noteController.text.isEmpty ? null : _noteController.text,
       isRecurring: widget.transaction.isRecurring,
       recurringTransactionId: widget.transaction.recurringTransactionId,
       createdAt: widget.transaction.createdAt,
@@ -302,27 +298,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                   onCategorySelected: (id, name) {
                     setState(() => _selectedCategoryId = id);
                   },
-                ),
-              ),
-              const SizedBox(height: AppTheme.spacingMd),
-
-              // Note
-              TextField(
-                controller: _noteController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: 'Ghi chú',
-                  alignLabelWithHint: true,
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.only(bottom: 40),
-                    child: Icon(Icons.note_outlined),
-                  ),
-                  filled: true,
-                  fillColor: AppTheme.backgroundColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                    borderSide: BorderSide.none,
-                  ),
                 ),
               ),
               const SizedBox(height: AppTheme.spacingXl),

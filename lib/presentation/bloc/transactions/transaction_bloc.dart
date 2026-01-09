@@ -107,8 +107,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
         final filtered = allTransactions
             .where((t) =>
                 (t.description?.toLowerCase().contains(event.query.toLowerCase()) ??
-                    false) ||
-                (t.note?.toLowerCase().contains(event.query.toLowerCase()) ?? false))
+                    false))
             .toList();
 
         final typeFiltered = _filterByType(filtered, event.filterType);

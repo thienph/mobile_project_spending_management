@@ -1223,15 +1223,6 @@ class $TransactionsTable extends Transactions
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _noteMeta = const VerificationMeta('note');
-  @override
-  late final GeneratedColumn<String> note = GeneratedColumn<String>(
-    'note',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _isRecurringMeta = const VerificationMeta(
     'isRecurring',
   );
@@ -1292,7 +1283,6 @@ class $TransactionsTable extends Transactions
     date,
     categoryId,
     type,
-    note,
     isRecurring,
     recurringTransactionId,
     createdAt,
@@ -1353,12 +1343,6 @@ class $TransactionsTable extends Transactions
       );
     } else if (isInserting) {
       context.missing(_typeMeta);
-    }
-    if (data.containsKey('note')) {
-      context.handle(
-        _noteMeta,
-        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
-      );
     }
     if (data.containsKey('is_recurring')) {
       context.handle(
@@ -1423,10 +1407,6 @@ class $TransactionsTable extends Transactions
         DriftSqlType.string,
         data['${effectivePrefix}type'],
       )!,
-      note: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}note'],
-      ),
       isRecurring: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_recurring'],
@@ -1459,7 +1439,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final DateTime date;
   final int categoryId;
   final String type;
-  final String? note;
   final bool isRecurring;
   final int? recurringTransactionId;
   final DateTime createdAt;
@@ -1471,7 +1450,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     required this.date,
     required this.categoryId,
     required this.type,
-    this.note,
     required this.isRecurring,
     this.recurringTransactionId,
     required this.createdAt,
@@ -1488,9 +1466,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     map['date'] = Variable<DateTime>(date);
     map['category_id'] = Variable<int>(categoryId);
     map['type'] = Variable<String>(type);
-    if (!nullToAbsent || note != null) {
-      map['note'] = Variable<String>(note);
-    }
     map['is_recurring'] = Variable<bool>(isRecurring);
     if (!nullToAbsent || recurringTransactionId != null) {
       map['recurring_transaction_id'] = Variable<int>(recurringTransactionId);
@@ -1510,7 +1485,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       date: Value(date),
       categoryId: Value(categoryId),
       type: Value(type),
-      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       isRecurring: Value(isRecurring),
       recurringTransactionId: recurringTransactionId == null && nullToAbsent
           ? const Value.absent()
@@ -1532,7 +1506,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       date: serializer.fromJson<DateTime>(json['date']),
       categoryId: serializer.fromJson<int>(json['categoryId']),
       type: serializer.fromJson<String>(json['type']),
-      note: serializer.fromJson<String?>(json['note']),
       isRecurring: serializer.fromJson<bool>(json['isRecurring']),
       recurringTransactionId: serializer.fromJson<int?>(
         json['recurringTransactionId'],
@@ -1551,7 +1524,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'date': serializer.toJson<DateTime>(date),
       'categoryId': serializer.toJson<int>(categoryId),
       'type': serializer.toJson<String>(type),
-      'note': serializer.toJson<String?>(note),
       'isRecurring': serializer.toJson<bool>(isRecurring),
       'recurringTransactionId': serializer.toJson<int?>(recurringTransactionId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -1566,7 +1538,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     DateTime? date,
     int? categoryId,
     String? type,
-    Value<String?> note = const Value.absent(),
     bool? isRecurring,
     Value<int?> recurringTransactionId = const Value.absent(),
     DateTime? createdAt,
@@ -1578,7 +1549,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     date: date ?? this.date,
     categoryId: categoryId ?? this.categoryId,
     type: type ?? this.type,
-    note: note.present ? note.value : this.note,
     isRecurring: isRecurring ?? this.isRecurring,
     recurringTransactionId: recurringTransactionId.present
         ? recurringTransactionId.value
@@ -1598,7 +1568,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ? data.categoryId.value
           : this.categoryId,
       type: data.type.present ? data.type.value : this.type,
-      note: data.note.present ? data.note.value : this.note,
       isRecurring: data.isRecurring.present
           ? data.isRecurring.value
           : this.isRecurring,
@@ -1619,7 +1588,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('date: $date, ')
           ..write('categoryId: $categoryId, ')
           ..write('type: $type, ')
-          ..write('note: $note, ')
           ..write('isRecurring: $isRecurring, ')
           ..write('recurringTransactionId: $recurringTransactionId, ')
           ..write('createdAt: $createdAt, ')
@@ -1636,7 +1604,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     date,
     categoryId,
     type,
-    note,
     isRecurring,
     recurringTransactionId,
     createdAt,
@@ -1652,7 +1619,6 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.date == this.date &&
           other.categoryId == this.categoryId &&
           other.type == this.type &&
-          other.note == this.note &&
           other.isRecurring == this.isRecurring &&
           other.recurringTransactionId == this.recurringTransactionId &&
           other.createdAt == this.createdAt &&
@@ -1666,7 +1632,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<DateTime> date;
   final Value<int> categoryId;
   final Value<String> type;
-  final Value<String?> note;
   final Value<bool> isRecurring;
   final Value<int?> recurringTransactionId;
   final Value<DateTime> createdAt;
@@ -1678,7 +1643,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.date = const Value.absent(),
     this.categoryId = const Value.absent(),
     this.type = const Value.absent(),
-    this.note = const Value.absent(),
     this.isRecurring = const Value.absent(),
     this.recurringTransactionId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -1691,7 +1655,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     required DateTime date,
     required int categoryId,
     required String type,
-    this.note = const Value.absent(),
     this.isRecurring = const Value.absent(),
     this.recurringTransactionId = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -1707,7 +1670,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<DateTime>? date,
     Expression<int>? categoryId,
     Expression<String>? type,
-    Expression<String>? note,
     Expression<bool>? isRecurring,
     Expression<int>? recurringTransactionId,
     Expression<DateTime>? createdAt,
@@ -1720,7 +1682,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (date != null) 'date': date,
       if (categoryId != null) 'category_id': categoryId,
       if (type != null) 'type': type,
-      if (note != null) 'note': note,
       if (isRecurring != null) 'is_recurring': isRecurring,
       if (recurringTransactionId != null)
         'recurring_transaction_id': recurringTransactionId,
@@ -1736,7 +1697,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Value<DateTime>? date,
     Value<int>? categoryId,
     Value<String>? type,
-    Value<String?>? note,
     Value<bool>? isRecurring,
     Value<int?>? recurringTransactionId,
     Value<DateTime>? createdAt,
@@ -1749,7 +1709,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       date: date ?? this.date,
       categoryId: categoryId ?? this.categoryId,
       type: type ?? this.type,
-      note: note ?? this.note,
       isRecurring: isRecurring ?? this.isRecurring,
       recurringTransactionId:
           recurringTransactionId ?? this.recurringTransactionId,
@@ -1779,9 +1738,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (type.present) {
       map['type'] = Variable<String>(type.value);
     }
-    if (note.present) {
-      map['note'] = Variable<String>(note.value);
-    }
     if (isRecurring.present) {
       map['is_recurring'] = Variable<bool>(isRecurring.value);
     }
@@ -1808,7 +1764,6 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('date: $date, ')
           ..write('categoryId: $categoryId, ')
           ..write('type: $type, ')
-          ..write('note: $note, ')
           ..write('isRecurring: $isRecurring, ')
           ..write('recurringTransactionId: $recurringTransactionId, ')
           ..write('createdAt: $createdAt, ')
@@ -4233,7 +4188,6 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       required DateTime date,
       required int categoryId,
       required String type,
-      Value<String?> note,
       Value<bool> isRecurring,
       Value<int?> recurringTransactionId,
       Value<DateTime> createdAt,
@@ -4247,7 +4201,6 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<DateTime> date,
       Value<int> categoryId,
       Value<String> type,
-      Value<String?> note,
       Value<bool> isRecurring,
       Value<int?> recurringTransactionId,
       Value<DateTime> createdAt,
@@ -4335,11 +4288,6 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<String> get type => $composableBuilder(
     column: $table.type,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get note => $composableBuilder(
-    column: $table.note,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4440,11 +4388,6 @@ class $$TransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get note => $composableBuilder(
-    column: $table.note,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<bool> get isRecurring => $composableBuilder(
     column: $table.isRecurring,
     builder: (column) => ColumnOrderings(column),
@@ -4533,9 +4476,6 @@ class $$TransactionsTableAnnotationComposer
 
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
-
-  GeneratedColumn<String> get note =>
-      $composableBuilder(column: $table.note, builder: (column) => column);
 
   GeneratedColumn<bool> get isRecurring => $composableBuilder(
     column: $table.isRecurring,
@@ -4630,7 +4570,6 @@ class $$TransactionsTableTableManager
                 Value<DateTime> date = const Value.absent(),
                 Value<int> categoryId = const Value.absent(),
                 Value<String> type = const Value.absent(),
-                Value<String?> note = const Value.absent(),
                 Value<bool> isRecurring = const Value.absent(),
                 Value<int?> recurringTransactionId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -4642,7 +4581,6 @@ class $$TransactionsTableTableManager
                 date: date,
                 categoryId: categoryId,
                 type: type,
-                note: note,
                 isRecurring: isRecurring,
                 recurringTransactionId: recurringTransactionId,
                 createdAt: createdAt,
@@ -4656,7 +4594,6 @@ class $$TransactionsTableTableManager
                 required DateTime date,
                 required int categoryId,
                 required String type,
-                Value<String?> note = const Value.absent(),
                 Value<bool> isRecurring = const Value.absent(),
                 Value<int?> recurringTransactionId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -4668,7 +4605,6 @@ class $$TransactionsTableTableManager
                 date: date,
                 categoryId: categoryId,
                 type: type,
-                note: note,
                 isRecurring: isRecurring,
                 recurringTransactionId: recurringTransactionId,
                 createdAt: createdAt,

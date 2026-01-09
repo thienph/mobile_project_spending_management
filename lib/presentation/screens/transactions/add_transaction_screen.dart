@@ -22,7 +22,6 @@ class AddTransactionScreen extends StatefulWidget {
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
   late TextEditingController _descriptionController;
   late TextEditingController _amountController;
-  late TextEditingController _noteController;
 
   DateTime _selectedDate = DateTime.now();
   String _transactionType = 'expense'; // 'income' or 'expense'
@@ -33,7 +32,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     super.initState();
     _descriptionController = TextEditingController();
     _amountController = TextEditingController();
-    _noteController = TextEditingController();
 
     _descriptionController.addListener(_onFieldChanged);
     _amountController.addListener(_onFieldChanged);
@@ -45,7 +43,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     _amountController.removeListener(_onFieldChanged);
     _descriptionController.dispose();
     _amountController.dispose();
-    _noteController.dispose();
     super.dispose();
   }
 
@@ -98,7 +95,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       date: _selectedDate,
       categoryId: _selectedCategoryId!,
       type: _transactionType,
-      note: _noteController.text.isEmpty ? null : _noteController.text,
       isRecurring: false,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -255,27 +251,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       _selectedCategoryId = id;
                     });
                   },
-                ),
-              ),
-              const SizedBox(height: AppTheme.spacingMd),
-
-              // Note
-              TextField(
-                controller: _noteController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  labelText: 'Ghi chú',
-                  alignLabelWithHint: true,
-                  prefixIcon: const Padding(
-                    padding: EdgeInsets.only(bottom: 40),
-                    child: Icon(Icons.note_outlined),
-                  ),
-                  filled: true,
-                  fillColor: AppTheme.backgroundColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                    borderSide: BorderSide.none,
-                  ),
                 ),
               ),
               const SizedBox(height: AppTheme.spacingXl),
