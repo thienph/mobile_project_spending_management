@@ -166,33 +166,25 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: AppTheme.spacingMd),
-              Row(
-                children: ['expense', 'income']
-                    .map((type) => Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: AppTheme.spacingSm),
-                            child: ChoiceChip(
-                              selected: _transactionType == type,
-                              onSelected: (selected) {
-                                if (selected) {
-                                  setState(() => _transactionType = type);
-                                }
-                              },
-                              label: Text(
-                                type == 'income' ? 'Thu' : 'Chi',
-                              ),
-                              selectedColor: type == 'income'
-                                  ? AppTheme.incomeColor
-                                  : AppTheme.expenseColor,
-                              labelStyle: TextStyle(
-                                color: _transactionType == type
-                                    ? Colors.white
-                                    : AppTheme.textPrimaryColor,
-                              ),
-                            ),
-                          ),
-                        ))
-                    .toList(),
+              SegmentedButton<String>(
+                segments: const <ButtonSegment<String>>[
+                  ButtonSegment<String>(value: 'expense', label: Text('Chi')),
+                  ButtonSegment<String>(value: 'income', label: Text('Thu')),
+                ],
+                selected: <String>{_transactionType},
+                onSelectionChanged: (Set<String> newSelection) {
+                  setState(() {
+                    _transactionType = newSelection.first;
+                  });
+                },
+                style: SegmentedButton.styleFrom(
+                  backgroundColor: AppTheme.backgroundColor,
+                  foregroundColor: AppTheme.textPrimaryColor,
+                  selectedBackgroundColor: _transactionType == 'income'
+                      ? AppTheme.incomeColor
+                      : AppTheme.expenseColor,
+                  selectedForegroundColor: Colors.white,
+                ),
               ),
               const SizedBox(height: AppTheme.spacingLg),
 

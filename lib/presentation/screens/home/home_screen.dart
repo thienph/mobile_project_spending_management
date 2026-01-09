@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_project_spending_management/core/theme/app_theme.dart';
+import 'package:mobile_project_spending_management/core/utils/number_extensions.dart';
 import 'package:mobile_project_spending_management/core/utils/date_extensions.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -15,40 +16,14 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Quản lý thu chi'),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(AppTheme.spacingMd),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Current Month Header
-            Card(
-              color: AppTheme.primaryColor,
-              child: Padding(
-                padding: const EdgeInsets.all(AppTheme.spacingMd),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Tháng này',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: AppTheme.fontSizeMd,
-                      ),
-                    ),
-                    const SizedBox(height: AppTheme.spacingSm),
-                    Text(
-                      now.toMonthYearString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: AppTheme.fontSizeXxl,
-                        fontWeight: AppTheme.fontWeightBold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: AppTheme.spacingLg),
+            _buildBalanceSummaryCard(context, now),
+            const Spacer(),
 
             // Feature Grid
             Text(
@@ -105,53 +80,85 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppTheme.spacingLg),
+            const Spacer(),
 
             // Quick Actions
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: ElevatedButton(
+                    onPressed: () => context.pushNamed('add-transaction'),
+                    style: ElevatedButton.styleFrom(
+                      shape: const CircleBorder(),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Icon(Icons.add, size: 32),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppTheme.spacingMd),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBalanceSummaryCard(BuildContext context, DateTime now) {
+    // TODO: Replace with actual data from BLoC
+    const double income = 5000000;
+    const double expense = 2500000;
+    final double balance = income - expense;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              'Thao tác nhanh',
-              style: Theme.of(context).textTheme.headlineMedium,
+              'Tổng quan ${now.toMonthYearString()}',
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: AppTheme.spacingMd),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => context.pushNamed('add-transaction'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add),
-                    SizedBox(width: AppTheme.spacingSm),
-                    Text('Thêm giao dịch'),
-                  ],
-                ),
+            Center(
+              child: Text(
+                balance.toCurrency(),
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
             ),
+            const SizedBox(height: AppTheme.spacingSm),
+            const Center(
+              child: Text('Số dư cuối kỳ'),
+            ),
+            const SizedBox(height: AppTheme.spacingLg),
+            const Divider(),
             const SizedBox(height: AppTheme.spacingMd),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => context.goNamed('transactions'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingMd),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.history),
-                    SizedBox(width: AppTheme.spacingSm),
-                    Text('Xem lịch sử giao dịch'),
-                  ],
-                ),
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildIncomeExpenseItem('Thu nhập', income, AppTheme.incomeColor),
+                _buildIncomeExpenseItem('Chi tiêu', expense, AppTheme.expenseColor),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildIncomeExpenseItem(String title, double amount, Color color) {
+    return Column(children: [
+      Text(title, style: const TextStyle(color: AppTheme.textSecondaryColor)),
+      const SizedBox(height: AppTheme.spacingXs),
+      Text(amount.toCurrency(), style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: AppTheme.fontSizeLg)),
+    ]);
   }
 }
 
@@ -175,34 +182,27 @@ class _FeatureCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-      child: Card(
-        color: color.withValues(alpha: 0.1),
-        child: Padding(
-          padding: const EdgeInsets.all(AppTheme.spacingMd),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 36, color: color),
-              const SizedBox(height: AppTheme.spacingMd),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: AppTheme.fontWeightSemiBold,
-                  fontSize: AppTheme.fontSizeLg,
-                ),
-                textAlign: TextAlign.center,
+      child: Container(
+        padding: const EdgeInsets.all(AppTheme.spacingMd),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: Border.all(color: AppTheme.borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 32, color: color),
+            const Spacer(),
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: AppTheme.fontWeightSemiBold,
+                fontSize: AppTheme.fontSizeLg,
               ),
-              const SizedBox(height: AppTheme.spacingSm),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: AppTheme.fontSizeSm,
-                  color: AppTheme.textSecondaryColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppTheme.spacingXs),
+            Text(subtitle, style: const TextStyle(color: AppTheme.textSecondaryColor)),
+          ],
         ),
       ),
     );

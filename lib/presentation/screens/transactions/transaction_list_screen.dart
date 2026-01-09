@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:collection/collection.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_project_spending_management/core/theme/app_theme.dart';
 import 'package:mobile_project_spending_management/core/utils/date_extensions.dart';
@@ -25,7 +26,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   late List<DateTime> _months; // Month anchors (first day of month)
   int _selectedMonthIndex = 0; // 0 = this month
   Map<String, double>? _balance; // Cache the balance
-  List<Transaction> _transactions = []; // Cache transactions
 
   @override
   void initState() {
@@ -174,12 +174,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             child: BlocConsumer<TransactionBloc, TransactionState>(
               listener: (context, state) {
                 // Cache transactions when loaded
-                if (state is TransactionLoaded) {
-                  setState(() {
-                    _transactions = state.transactions;
-                  });
-                }
-                // Cache balance when it's loaded
+                 // Cache balance when it's loaded
                 if (state is BalanceLoaded) {
                   setState(() {
                     _balance = state.balance;
@@ -230,8 +225,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 }
                 
                 // Show transactions (from cache or state)
-                if (state is TransactionLoaded || _transactions.isNotEmpty) {
-                  final transactions = state is TransactionLoaded ? state.transactions : _transactions;
+                if (state is TransactionLoaded) {
+                  final transactions = state.transactions;
                   if (transactions.isEmpty) {
                     return Center(
                       child: Column(
@@ -246,7 +241,12 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                   }
                   
                   // Build transaction list with balance summary
-                  return _buildTransactionList(transactions);
+                  return Column(
+                    children: [
+                      if (_balance != null) _buildBalanceSummary(),
+                      Expanded(child: _buildGroupedTransactionList(transactions)),
+                    ],
+                  );
                 }
                 
                 return const SizedBox.shrink();
@@ -267,93 +267,89 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
-  /// Build transaction list with balance summary
-  Widget _buildTransactionList(List<Transaction> transactions) {
+  Widget _buildBalanceSummary() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppTheme.spacingMd, 0, AppTheme.spacingMd, AppTheme.spacingMd),
+      child: BalanceSummaryCard(
+        openingBalance: _balance!['openingBalance'] ?? 0,
+        income: _balance!['income'] ?? 0,
+        expense: _balance!['expense'] ?? 0,
+        closingBalance: _balance!['closingBalance'] ?? 0,
+      ),
+    );
+  }
+
+  /// Build transaction list grouped by date
+  Widget _buildGroupedTransactionList(List<Transaction> transactions) {
+    final groupedTransactions = groupBy(
+      transactions,
+      (Transaction t) => t.date.startOfDay,
+    );
+
+    final sortedKeys = groupedTransactions.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
+
     return ListView.builder(
-      itemCount: transactions.length + (_balance != null ? 1 : 0),
+      itemCount: sortedKeys.length,
       padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
       itemBuilder: (context, index) {
-        // Show balance summary at top
-        if (_balance != null && index == 0) {
-          return BalanceSummaryCard(
-            openingBalance: _balance!['openingBalance'] ?? 0,
-            income: _balance!['income'] ?? 0,
-            expense: _balance!['expense'] ?? 0,
-            closingBalance: _balance!['closingBalance'] ?? 0,
-          );
-        }
+        final date = sortedKeys[index];
+        final transactionsOnDate = groupedTransactions[date]!;
 
-        final transactionIndex = _balance != null ? index - 1 : index;
-        final transaction = transactions[transactionIndex];
-        final isIncome = transaction.type == 'income';
-        
-        return InkWell(
-          onTap: () async {
-            final result = await context.pushNamed(
-              'edit-transaction',
-              pathParameters: {
-                'id': transaction.id!.toString(),
-              },
-              extra: transaction,
-            );
-            if (result == true && mounted) {
-              _loadTransactions();
-            }
-          },
-          child: Card(
-            margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
-            child: Padding(
-              padding: const EdgeInsets.all(AppTheme.spacingMd),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          transaction.description ?? 'Giao dịch không tên',
-                          style: const TextStyle(fontWeight: AppTheme.fontWeightSemiBold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: AppTheme.spacingSm),
-                        Text(
-                          transaction.date.toDateString(),
-                          style: const TextStyle(
-                            fontSize: AppTheme.fontSizeSm,
-                            color: AppTheme.textSecondaryColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AppTheme.spacingMd),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        '${isIncome ? '+' : '-'}${transaction.amount.toCurrency()}',
-                        style: TextStyle(
-                          fontWeight: AppTheme.fontWeightSemiBold,
-                          color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
-                          fontSize: AppTheme.fontSizeLg,
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.spacingXs),
-                      const Icon(
-                        Icons.chevron_right,
-                        size: 16,
-                        color: AppTheme.textSecondaryColor,
-                      ),
-                    ],
-                  ),
-                ],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: AppTheme.spacingLg, bottom: AppTheme.spacingSm),
+              child: Text(
+                date.isToday ? 'Hôm nay' : (date.isYesterday ? 'Hôm qua' : date.toDateString()),
+                style: const TextStyle(
+                  fontWeight: AppTheme.fontWeightSemiBold,
+                  color: AppTheme.textSecondaryColor,
+                ),
               ),
             ),
-          ),
+            ...transactionsOnDate.map((transaction) => _buildTransactionItem(transaction)),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildTransactionItem(Transaction transaction) {
+    final isIncome = transaction.type == 'income';
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
+      child: ListTile(
+        leading: CircleAvatar(
+          // TODO: Replace with category icon
+          child: Icon(isIncome ? Icons.arrow_downward : Icons.arrow_upward),
+        ),
+        title: Text(
+          transaction.description ?? 'Giao dịch không tên',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(transaction.date.toTimeString()), // Or category name
+        trailing: Text(
+          '${isIncome ? '+' : '-'}${transaction.amount.toCurrency()}',
+          style: TextStyle(
+            fontWeight: AppTheme.fontWeightSemiBold,
+            color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
+            fontSize: AppTheme.fontSizeLg,
+          ),
+        ),
+        onTap: () async {
+          final result = await context.pushNamed(
+            'edit-transaction',
+            pathParameters: {'id': transaction.id!.toString()},
+            extra: transaction,
+          );
+          if (result == true && mounted) {
+            _loadTransactions();
+          }
+        },
+      ),
     );
   }
 }

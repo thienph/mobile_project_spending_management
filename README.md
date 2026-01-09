@@ -2,20 +2,10 @@
 
 Ứng dụng quản lý thu chi cá nhân, phân tích tài chính, đặt mục tiêu tiết kiệm và cảnh báo chi tiêu được xây dựng bằng Flutter.
 
-## Tính năng chính
+## Tính năng
 
-### Đã triển khai
-- Kiến trúc Clean Architecture với BLoC pattern
-- Database Schema với Drift/SQLite
-- Dependency Injection với GetIt
-- Navigation System với GoRouter
-- Theme System với Material Design 3
-- Core Utilities: Date/Number/String extensions
-
-### Đang phát triển
 - Theo dõi thu chi: Ghi nhận, chỉnh sửa, xóa giao dịch thu/chi
 - Phân tích tài chính: Biểu đồ, thống kê, báo cáo theo ngày/tuần/tháng/năm
-- Mục tiêu tiết kiệm: Đặt và theo dõi tiến độ các mục tiêu tài chính
 - Cảnh báo chi tiêu: Thông báo khi vượt ngân sách hoặc đạt mục tiêu
 
 ## Kiến trúc
