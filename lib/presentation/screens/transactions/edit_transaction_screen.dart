@@ -71,7 +71,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   bool get _isFormValid {
     final cleanAmount = _amountController.text.replaceAll('.', '');
     final amount = double.tryParse(cleanAmount);
-    return amount != null && amount > 0 && _descriptionController.text.isNotEmpty;
+    return amount != null && amount > 0;
   }
 
   void _selectDate() async {
@@ -91,11 +91,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     final amount = double.tryParse(cleanAmount);
     if (amount == null || amount <= 0) {
       _showTopBanner(context, 'Vui lòng nhập số tiền hợp lệ', isError: true);
-      return;
-    }
-
-    if (_descriptionController.text.isEmpty) {
-      _showTopBanner(context, 'Vui lòng nhập mô tả', isError: true);
       return;
     }
 
