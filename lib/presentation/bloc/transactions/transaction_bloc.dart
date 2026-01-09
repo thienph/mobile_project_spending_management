@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_project_spending_management/domain/repositories/transaction_repository.dart';
 import 'package:mobile_project_spending_management/domain/usecases/transactions/add_transaction.dart';
 import 'package:mobile_project_spending_management/domain/usecases/transactions/delete_transaction.dart';
 import 'package:mobile_project_spending_management/domain/usecases/transactions/get_transactions.dart';
@@ -11,18 +12,21 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   final AddTransaction addTransaction;
   final UpdateTransaction updateTransaction;
   final DeleteTransaction deleteTransaction;
+  final TransactionRepository repository;
 
   TransactionBloc({
     required this.getTransactions,
     required this.addTransaction,
     required this.updateTransaction,
     required this.deleteTransaction,
+    required this.repository,
   }) : super(TransactionInitial()) {
     on<LoadTransactions>(_onLoadTransactions);
     on<AddTransactionEvent>(_onAddTransaction);
     on<UpdateTransactionEvent>(_onUpdateTransaction);
     on<DeleteTransactionEvent>(_onDeleteTransaction);
     on<SearchTransactionsEvent>(_onSearchTransactions);
+    on<LoadBalanceEvent>(_onLoadBalance);
   }
 
   Future<void> _onLoadTransactions(
@@ -101,6 +105,21 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
 
         emit(TransactionLoaded(filtered));
       },
+    );
+  }
+
+  Future<void> _onLoadBalance(
+    LoadBalanceEvent event,
+    Emitter<TransactionState> emit,
+  ) async {
+    final result = await repository.getPeriodBalance(
+      startDate: event.startDate,
+      endDate: event.endDate,
+    );
+
+    result.fold(
+      (failure) => emit(TransactionError(failure.message)),
+      (balance) => emit(BalanceLoaded(balance)),
     );
   }
 }

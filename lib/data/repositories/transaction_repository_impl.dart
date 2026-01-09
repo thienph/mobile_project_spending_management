@@ -179,4 +179,78 @@ class TransactionRepositoryImpl implements TransactionRepository {
       return Left(DatabaseFailure('Failed to search transactions: $e'));
     }
   }
+
+  @override
+  Future<Either<Failure, double>> getCumulativeBalance({
+    required DateTime upToDate,
+  }) async {
+    try {
+      final models = await (database.select(database.transactions)
+            ..where((t) => t.date.isSmallerOrEqualValue(upToDate)))
+          .get();
+
+      double balance = 0;
+      for (final model in models) {
+        if (model.type == 'income') {
+          balance += model.amount;
+        } else {
+          balance -= model.amount;
+        }
+      }
+
+      return Right(balance);
+    } catch (e) {
+      return Left(DatabaseFailure('Failed to calculate cumulative balance: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, double>>> getPeriodBalance({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      // Get all transactions up to start of period for opening balance
+      final beforePeriod = await (database.select(database.transactions)
+            ..where((t) => t.date.isSmallerThanValue(startDate)))
+          .get();
+
+      double openingBalance = 0;
+      for (final model in beforePeriod) {
+        if (model.type == 'income') {
+          openingBalance += model.amount;
+        } else {
+          openingBalance -= model.amount;
+        }
+      }
+
+      // Get transactions in period
+      final inPeriod = await (database.select(database.transactions)
+            ..where((t) =>
+                t.date.isBiggerOrEqualValue(startDate) &
+                t.date.isSmallerOrEqualValue(endDate)))
+          .get();
+
+      double periodIncome = 0;
+      double periodExpense = 0;
+      for (final model in inPeriod) {
+        if (model.type == 'income') {
+          periodIncome += model.amount;
+        } else {
+          periodExpense += model.amount;
+        }
+      }
+
+      double closingBalance = openingBalance + periodIncome - periodExpense;
+
+      return Right({
+        'openingBalance': openingBalance,
+        'income': periodIncome,
+        'expense': periodExpense,
+        'closingBalance': closingBalance,
+      });
+    } catch (e) {
+      return Left(DatabaseFailure('Failed to calculate period balance: $e'));
+    }
+  }
 }

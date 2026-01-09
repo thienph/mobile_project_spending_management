@@ -62,6 +62,7 @@ Future<void> setupDependencyInjection() async {
       addTransaction: getIt<AddTransaction>(),
       updateTransaction: getIt<UpdateTransaction>(),
       deleteTransaction: getIt<DeleteTransaction>(),
+      repository: getIt<TransactionRepository>(),
     ),
   );
 

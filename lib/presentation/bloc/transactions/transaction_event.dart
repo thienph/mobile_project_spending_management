@@ -74,3 +74,16 @@ class SearchTransactionsEvent extends TransactionEvent {
   @override
   List<Object?> get props => [query, startDate, endDate];
 }
+
+class LoadBalanceEvent extends TransactionEvent {
+  final DateTime startDate;
+  final DateTime endDate;
+
+  const LoadBalanceEvent({
+    required this.startDate,
+    required this.endDate,
+  });
+
+  @override
+  List<Object?> get props => [startDate, endDate];
+}

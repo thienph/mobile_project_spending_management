@@ -143,12 +143,12 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Cập nhật giao dịch thành công')),
             );
-            context.pop();
+            context.pop(true); // Return true to indicate success
           } else if (state is TransactionDeleted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Xóa giao dịch thành công')),
             );
-            context.pop();
+            context.pop(true); // Return true to indicate success
           } else if (state is TransactionError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Lỗi: ${state.message}')),

@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_project_spending_management/core/theme/app_theme.dart';
 import 'package:mobile_project_spending_management/core/utils/date_extensions.dart';
 import 'package:mobile_project_spending_management/core/utils/number_extensions.dart';
+import 'package:mobile_project_spending_management/domain/entities/transaction.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_bloc.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_event.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_state.dart';
+import 'package:mobile_project_spending_management/presentation/widgets/balance_summary_card.dart';
 
 class TransactionListScreen extends StatefulWidget {
   const TransactionListScreen({super.key});
@@ -22,6 +24,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   String _searchQuery = '';
   late List<DateTime> _months; // Month anchors (first day of month)
   int _selectedMonthIndex = 0; // 0 = this month
+  Map<String, double>? _balance; // Cache the balance
+  List<Transaction> _transactions = []; // Cache transactions
 
   @override
   void initState() {
@@ -34,6 +38,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   }
 
   void _loadTransactions() {
+    // Load transactions
     if (_searchQuery.isNotEmpty) {
       context.read<TransactionBloc>().add(
             SearchTransactionsEvent(
@@ -50,6 +55,14 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             ),
           );
     }
+    
+    // Load balance
+    context.read<TransactionBloc>().add(
+          LoadBalanceEvent(
+            startDate: _startDate,
+            endDate: _endDate,
+          ),
+        );
   }
 
   void _filterByType(String type) {
@@ -160,8 +173,23 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           Expanded(
             child: BlocConsumer<TransactionBloc, TransactionState>(
               listener: (context, state) {
-                if (state is TransactionDeleted || state is TransactionUpdated) {
-                  _loadTransactions();
+                // Cache transactions when loaded
+                if (state is TransactionLoaded) {
+                  setState(() {
+                    _transactions = state.transactions;
+                  });
+                }
+                // Cache balance when it's loaded
+                if (state is BalanceLoaded) {
+                  setState(() {
+                    _balance = state.balance;
+                  });
+                }
+                // Show success messages (transaction changes are auto-reloaded by BLoC)
+                if (state is TransactionAdded) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Thêm giao dịch thành công')),
+                  );
                 }
                 if (state is TransactionDeleted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -175,11 +203,14 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 }
               },
               builder: (context, state) {
+                // Show loading
                 if (state is TransactionLoading) {
                   return const Center(
                     child: CircularProgressIndicator(),
                   );
                 }
+                
+                // Show error
                 if (state is TransactionError) {
                   return Center(
                     child: Column(
@@ -197,8 +228,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                     ),
                   );
                 }
-                if (state is TransactionLoaded) {
-                  if (state.transactions.isEmpty) {
+                
+                // Show transactions (from cache or state)
+                if (state is TransactionLoaded || _transactions.isNotEmpty) {
+                  final transactions = state is TransactionLoaded ? state.transactions : _transactions;
+                  if (transactions.isEmpty) {
                     return Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -210,76 +244,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       ),
                     );
                   }
-                  return ListView.builder(
-                    itemCount: state.transactions.length,
-                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
-                    itemBuilder: (context, index) {
-                      final transaction = state.transactions[index];
-                      final isIncome = transaction.type == 'income';
-                      return InkWell(
-                        onTap: () => context.pushNamed(
-                          'edit-transaction',
-                          pathParameters: {
-                            'id': transaction.id!.toString(),
-                          },
-                          extra: transaction,
-                        ),
-                        child: Card(
-                          margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
-                          child: Padding(
-                            padding: const EdgeInsets.all(AppTheme.spacingMd),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        transaction.description ?? 'Giao dịch không tên',
-                                        style: const TextStyle(fontWeight: AppTheme.fontWeightSemiBold),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: AppTheme.spacingSm),
-                                      Text(
-                                        transaction.date.toDateString(),
-                                        style: const TextStyle(
-                                          fontSize: AppTheme.fontSizeSm,
-                                          color: AppTheme.textSecondaryColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: AppTheme.spacingMd),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '${isIncome ? '+' : '-'}${transaction.amount.toCurrency()}',
-                                      style: TextStyle(
-                                        fontWeight: AppTheme.fontWeightSemiBold,
-                                        color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
-                                        fontSize: AppTheme.fontSizeLg,
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppTheme.spacingXs),
-                                    const Icon(
-                                      Icons.chevron_right,
-                                      size: 16,
-                                      color: AppTheme.textSecondaryColor,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  );
+                  
+                  // Build transaction list with balance summary
+                  return _buildTransactionList(transactions);
                 }
+                
                 return const SizedBox.shrink();
               },
             ),
@@ -287,9 +256,104 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.pushNamed('add-transaction'),
+        onPressed: () async {
+          final result = await context.pushNamed('add-transaction');
+          if (result == true && mounted) {
+            _loadTransactions();
+          }
+        },
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  /// Build transaction list with balance summary
+  Widget _buildTransactionList(List<Transaction> transactions) {
+    return ListView.builder(
+      itemCount: transactions.length + (_balance != null ? 1 : 0),
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
+      itemBuilder: (context, index) {
+        // Show balance summary at top
+        if (_balance != null && index == 0) {
+          return BalanceSummaryCard(
+            openingBalance: _balance!['openingBalance'] ?? 0,
+            income: _balance!['income'] ?? 0,
+            expense: _balance!['expense'] ?? 0,
+            closingBalance: _balance!['closingBalance'] ?? 0,
+          );
+        }
+
+        final transactionIndex = _balance != null ? index - 1 : index;
+        final transaction = transactions[transactionIndex];
+        final isIncome = transaction.type == 'income';
+        
+        return InkWell(
+          onTap: () async {
+            final result = await context.pushNamed(
+              'edit-transaction',
+              pathParameters: {
+                'id': transaction.id!.toString(),
+              },
+              extra: transaction,
+            );
+            if (result == true && mounted) {
+              _loadTransactions();
+            }
+          },
+          child: Card(
+            margin: const EdgeInsets.only(bottom: AppTheme.spacingMd),
+            child: Padding(
+              padding: const EdgeInsets.all(AppTheme.spacingMd),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          transaction.description ?? 'Giao dịch không tên',
+                          style: const TextStyle(fontWeight: AppTheme.fontWeightSemiBold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: AppTheme.spacingSm),
+                        Text(
+                          transaction.date.toDateString(),
+                          style: const TextStyle(
+                            fontSize: AppTheme.fontSizeSm,
+                            color: AppTheme.textSecondaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.spacingMd),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${isIncome ? '+' : '-'}${transaction.amount.toCurrency()}',
+                        style: TextStyle(
+                          fontWeight: AppTheme.fontWeightSemiBold,
+                          color: isIncome ? AppTheme.incomeColor : AppTheme.expenseColor,
+                          fontSize: AppTheme.fontSizeLg,
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.spacingXs),
+                      const Icon(
+                        Icons.chevron_right,
+                        size: 16,
+                        color: AppTheme.textSecondaryColor,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

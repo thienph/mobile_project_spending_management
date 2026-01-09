@@ -47,3 +47,12 @@ class TransactionDeleted extends TransactionState {
   @override
   List<Object?> get props => [];
 }
+
+class BalanceLoaded extends TransactionState {
+  final Map<String, double> balance; // {openingBalance, income, expense, closingBalance}
+
+  const BalanceLoaded(this.balance);
+
+  @override
+  List<Object?> get props => [balance];
+}

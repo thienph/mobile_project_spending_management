@@ -48,4 +48,15 @@ abstract class TransactionRepository {
     required DateTime startDate,
     required DateTime endDate,
   });
+
+  /// Get cumulative balance up to [upToDate] (income - expense)
+  Future<Either<Failure, double>> getCumulativeBalance({
+    required DateTime upToDate,
+  });
+
+  /// Get balance for a specific period
+  Future<Either<Failure, Map<String, double>>> getPeriodBalance({
+    required DateTime startDate,
+    required DateTime endDate,
+  });
 }
