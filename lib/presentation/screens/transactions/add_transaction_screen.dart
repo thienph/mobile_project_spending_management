@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_project_spending_management/core/di/injection.dart';
@@ -56,7 +57,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   }
 
   void _submitTransaction() {
-    final amount = double.tryParse(_amountController.text);
+    final cleanAmount = _amountController.text.replaceAll('.', '');
+    final amount = double.tryParse(cleanAmount);
     if (amount == null || amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập số tiền hợp lệ')),
@@ -120,90 +122,70 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Transaction Type Selection
-              Text(
-                'Loại giao dịch',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: AppTheme.spacingMd),
-              Row(
-                children: ['expense', 'income']
-                    .map((type) => Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: AppTheme.spacingSm),
-                            child: ChoiceChip(
-                              selected: _transactionType == type,
-                              onSelected: (selected) {
-                                if (selected) {
-                                  setState(() => _transactionType = type);
-                                }
-                              },
-                              label: Text(
-                                type == 'income' ? 'Thu' : 'Chi',
-                              ),
-                              selectedColor: type == 'income'
-                                  ? AppTheme.incomeColor
-                                  : AppTheme.expenseColor,
-                              labelStyle: TextStyle(
-                                color: _transactionType == type
-                                    ? Colors.white
-                                    : AppTheme.textPrimaryColor,
-                              ),
-                            ),
-                          ),
-                        ))
-                    .toList(),
-              ),
-              const SizedBox(height: AppTheme.spacingLg),
-
-              // Description
-              Text(
-                'Mô tả',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: AppTheme.spacingMd),
-              TextField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  hintText: 'Ví dụ: Ăn trưa',
-                  filled: true,
-                  fillColor: AppTheme.backgroundColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                    borderSide: const BorderSide(color: AppTheme.borderColor),
+              Center(
+                child: SegmentedButton<String>(
+                  segments: const <ButtonSegment<String>>[
+                    ButtonSegment<String>(value: 'expense', label: Text('Chi tiêu')),
+                    ButtonSegment<String>(value: 'income', label: Text('Thu nhập')),
+                  ],
+                  selected: <String>{_transactionType},
+                  onSelectionChanged: (Set<String> newSelection) {
+                    setState(() {
+                      _transactionType = newSelection.first;
+                    });
+                  },
+                  style: SegmentedButton.styleFrom(
+                    selectedBackgroundColor: _transactionType == 'income'
+                        ? AppTheme.incomeColor
+                        : AppTheme.expenseColor,
+                    selectedForegroundColor: Colors.white,
                   ),
-                  contentPadding: const EdgeInsets.all(AppTheme.spacingMd),
                 ),
               ),
               const SizedBox(height: AppTheme.spacingLg),
 
               // Amount
-              Text(
-                'Số tiền',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: AppTheme.spacingMd),
               TextField(
                 controller: _amountController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  CurrencyInputFormatter(),
+                ],
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimaryColor,
+                ),
                 decoration: InputDecoration(
                   hintText: '0',
-                  filled: true,
-                  fillColor: AppTheme.backgroundColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                    borderSide: const BorderSide(color: AppTheme.borderColor),
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(
+                    color: AppTheme.textSecondaryColor.withValues(alpha: 0.5),
                   ),
-                  contentPadding: const EdgeInsets.all(AppTheme.spacingMd),
                 ),
               ),
               const SizedBox(height: AppTheme.spacingLg),
 
-              // Date
-              Text(
-                'Ngày giao dịch',
-                style: Theme.of(context).textTheme.headlineMedium,
+              // Description
+              TextField(
+                controller: _descriptionController,
+                decoration: InputDecoration(
+                  labelText: 'Mô tả',
+                  hintText: 'Ví dụ: Ăn trưa',
+                  prefixIcon: const Icon(Icons.description_outlined),
+                  filled: true,
+                  fillColor: AppTheme.backgroundColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
               ),
               const SizedBox(height: AppTheme.spacingMd),
+
+              // Date
               GestureDetector(
                 onTap: _selectDate,
                 child: Container(
@@ -211,24 +193,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   decoration: BoxDecoration(
                     color: AppTheme.backgroundColor,
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                    border: Border.all(color: AppTheme.borderColor),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      const Icon(Icons.calendar_today, color: AppTheme.textSecondaryColor),
+                      const SizedBox(width: AppTheme.spacingMd),
                       Text(
                         _selectedDate.toDateString(),
                         style: const TextStyle(
-                          fontSize: AppTheme.fontSizeLg,
-                          fontWeight: AppTheme.fontWeightSemiBold,
+                          fontSize: AppTheme.fontSizeMd,
+                          color: AppTheme.textPrimaryColor,
                         ),
                       ),
-                      const Icon(Icons.calendar_today, color: AppTheme.primaryColor),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: AppTheme.spacingLg),
+              const SizedBox(height: AppTheme.spacingMd),
 
               // Category Picker
               BlocProvider(
@@ -243,26 +224,25 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: AppTheme.spacingLg),
+              const SizedBox(height: AppTheme.spacingMd),
 
               // Note
-              Text(
-                'Ghi chú (tùy chọn)',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: AppTheme.spacingMd),
               TextField(
                 controller: _noteController,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: 'Thêm ghi chú...',
+                  labelText: 'Ghi chú',
+                  alignLabelWithHint: true,
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.only(bottom: 40),
+                    child: Icon(Icons.note_outlined),
+                  ),
                   filled: true,
                   fillColor: AppTheme.backgroundColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                    borderSide: const BorderSide(color: AppTheme.borderColor),
+                    borderSide: BorderSide.none,
                   ),
-                  contentPadding: const EdgeInsets.all(AppTheme.spacingMd),
                 ),
               ),
               const SizedBox(height: AppTheme.spacingXl),
@@ -290,6 +270,36 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+
+    String value = newValue.text.replaceAll('.', '');
+    // Remove leading zeros
+    final number = int.tryParse(value);
+    if (number == null) return newValue;
+    value = number.toString();
+
+    final buffer = StringBuffer();
+    for (int i = 0; i < value.length; i++) {
+      if (i > 0 && (value.length - i) % 3 == 0) {
+        buffer.write('.');
+      }
+      buffer.write(value[i]);
+    }
+    final newText = buffer.toString();
+
+    return newValue.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
     );
   }
 }
