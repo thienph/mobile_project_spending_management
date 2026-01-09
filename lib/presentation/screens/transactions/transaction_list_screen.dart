@@ -47,6 +47,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
               query: _searchQuery,
               startDate: _startDate,
               endDate: _endDate,
+              filterType: _filterType,
             ),
           );
     } else {
@@ -54,6 +55,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             LoadTransactions(
               startDate: _startDate,
               endDate: _endDate,
+              filterType: _filterType,
             ),
           );
     }

@@ -8,14 +8,16 @@ abstract class TransactionEvent extends Equatable {
 class LoadTransactions extends TransactionEvent {
   final DateTime startDate;
   final DateTime endDate;
+  final String filterType; // 'all', 'income', 'expense'
 
   const LoadTransactions({
     required this.startDate,
     required this.endDate,
+    this.filterType = 'all',
   });
 
   @override
-  List<Object?> get props => [startDate, endDate];
+  List<Object?> get props => [startDate, endDate, filterType];
 }
 
 class LoadTransactionsByCategory extends TransactionEvent {
@@ -64,15 +66,17 @@ class SearchTransactionsEvent extends TransactionEvent {
   final String query;
   final DateTime startDate;
   final DateTime endDate;
+  final String filterType; // 'all', 'income', 'expense'
 
   const SearchTransactionsEvent({
     required this.query,
     required this.startDate,
     required this.endDate,
+    this.filterType = 'all',
   });
 
   @override
-  List<Object?> get props => [query, startDate, endDate];
+  List<Object?> get props => [query, startDate, endDate, filterType];
 }
 
 class LoadBalanceEvent extends TransactionEvent {

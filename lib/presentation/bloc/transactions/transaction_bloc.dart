@@ -47,8 +47,9 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     result.fold(
       (failure) => emit(TransactionError(failure.message)),
       (transactions) {
-        _currentTransactions = transactions;
-        emit(TransactionLoaded(transactions));
+        final filtered = _filterByType(transactions, event.filterType);
+        _currentTransactions = filtered;
+        emit(TransactionLoaded(filtered));
       },
     );
   }
@@ -110,8 +111,9 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
                 (t.note?.toLowerCase().contains(event.query.toLowerCase()) ?? false))
             .toList();
 
-        _currentTransactions = filtered;
-        emit(TransactionLoaded(filtered));
+        final typeFiltered = _filterByType(filtered, event.filterType);
+        _currentTransactions = typeFiltered;
+        emit(TransactionLoaded(typeFiltered));
       },
     );
   }
@@ -136,5 +138,13 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
         }
       },
     );
+  }
+
+  /// Filter transactions by type
+  List<Transaction> _filterByType(List<Transaction> transactions, String filterType) {
+    if (filterType == 'all') {
+      return transactions;
+    }
+    return transactions.where((t) => t.type == filterType).toList();
   }
 }
