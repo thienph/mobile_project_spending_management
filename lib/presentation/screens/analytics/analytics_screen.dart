@@ -19,7 +19,7 @@ class AnalyticsScreen extends StatefulWidget {
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
-  String _selectedPeriod = 'month';
+  String _selectedPeriod = 'week';
 
   @override
   void initState() {
@@ -139,8 +139,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
       child: Row(
         children: [
-          _buildPeriodButton('Ngày', 'day'),
-          const SizedBox(width: AppTheme.spacingSm),
           _buildPeriodButton('Tuần', 'week'),
           const SizedBox(width: AppTheme.spacingSm),
           _buildPeriodButton('Tháng', 'month'),
