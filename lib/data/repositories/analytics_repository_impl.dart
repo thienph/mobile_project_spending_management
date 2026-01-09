@@ -204,4 +204,47 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       return Left(DatabaseFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, List<DateTime>>> getAvailableAnchors({
+    required String period,
+  }) async {
+    try {
+      final transactions = await database.select(database.transactions).get();
+
+      if (transactions.isEmpty) {
+        return const Right(<DateTime>[]);
+      }
+
+      DateTime startOfWeek(DateTime d) {
+        final monday = d.subtract(Duration(days: d.weekday - 1));
+        return DateTime(monday.year, monday.month, monday.day);
+      }
+
+      final Set<DateTime> anchors = {};
+      for (final t in transactions) {
+        final dt = t.date;
+        switch (period) {
+          case 'week':
+            anchors.add(startOfWeek(dt));
+            break;
+          case 'month':
+            anchors.add(DateTime(dt.year, dt.month, 1));
+            break;
+          case 'year':
+            anchors.add(DateTime(dt.year, 1, 1));
+            break;
+          default:
+            anchors.add(DateTime(dt.year, dt.month, dt.day));
+        }
+      }
+
+      final sorted = anchors.toList()
+        ..sort((a, b) => b.compareTo(a));
+
+      return Right(sorted);
+    } catch (e) {
+      return Left(DatabaseFailure(e.toString()));
+    }
+  }
 }

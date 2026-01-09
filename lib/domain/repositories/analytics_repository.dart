@@ -31,4 +31,11 @@ abstract class AnalyticsRepository {
     required String type,
     required int limit,
   });
+
+  /// Get available period anchors based on existing transactions
+  /// Returns a list of period start dates (anchors) in descending order.
+  /// period: 'week' | 'month' | 'year'
+  Future<Either<Failure, List<DateTime>>> getAvailableAnchors({
+    required String period,
+  });
 }

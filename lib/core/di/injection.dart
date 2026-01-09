@@ -16,6 +16,7 @@ import 'package:mobile_project_spending_management/domain/usecases/analytics/get
 import 'package:mobile_project_spending_management/domain/usecases/analytics/get_category_breakdown.dart';
 import 'package:mobile_project_spending_management/domain/usecases/analytics/get_daily_summaries.dart';
 import 'package:mobile_project_spending_management/domain/usecases/analytics/get_top_categories.dart';
+import 'package:mobile_project_spending_management/domain/usecases/analytics/get_available_anchors.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/categories/category_bloc.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_bloc.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/analytics/analytics_bloc.dart';
@@ -71,6 +72,9 @@ Future<void> setupDependencyInjection() async {
   );
   getIt.registerLazySingleton<GetTopCategories>(
     () => GetTopCategories(getIt<AnalyticsRepository>()),
+  );
+  getIt.registerLazySingleton<GetAvailableAnchors>(
+    () => GetAvailableAnchors(getIt<AnalyticsRepository>()),
   );
 
   // BLoCs
