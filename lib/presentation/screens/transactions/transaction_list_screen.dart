@@ -9,6 +9,7 @@ import 'package:mobile_project_spending_management/core/utils/number_extensions.
 import 'package:mobile_project_spending_management/domain/entities/category.dart';
 import 'package:mobile_project_spending_management/domain/entities/transaction.dart';
 import 'package:mobile_project_spending_management/domain/repositories/category_repository.dart';
+import 'package:mobile_project_spending_management/domain/usecases/analytics/get_available_anchors.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_bloc.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_event.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_state.dart';
@@ -27,8 +28,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   late DateTime _endDate;
   String _filterType = 'all'; // 'all', 'income', 'expense'
   String _searchQuery = '';
-  late List<DateTime> _months; // Month anchors (first day of month)
-  late List<GlobalKey> _monthKeys;
+  List<DateTime> _months = []; // Month anchors (first day of month)
+  List<GlobalKey> _monthKeys = [];
   int _selectedMonthIndex = 0; // 0 = this month
   Map<String, double>? _balance; // Cache the balance
   Map<int, Category> _categoriesCache = {}; // Cache categories
@@ -37,11 +38,10 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   void initState() {
     super.initState();
     final now = DateTime.now();
-    _months = List.generate(12, (i) => DateTime(now.year, now.month - i, 1));
-    _monthKeys = List.generate(12, (_) => GlobalKey());
     _startDate = now.startOfMonth;
     _endDate = now.endOfMonth;
     _loadCategories();
+    _loadMonthAnchors();
     _loadTransactions();
   }
 
@@ -108,6 +108,35 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
         curve: Curves.easeInOut,
       );
     }
+  }
+
+  Future<void> _loadMonthAnchors() async {
+    final useCase = getIt<GetAvailableAnchors>();
+    final result = await useCase(period: 'month');
+    result.fold(
+      (_) {
+        if (!mounted) return;
+        setState(() {
+          _months = [];
+          _monthKeys = [];
+          _selectedMonthIndex = 0;
+        });
+      },
+      (anchors) {
+        if (!mounted) return;
+        setState(() {
+          _months = anchors;
+          _monthKeys = List.generate(_months.length, (_) => GlobalKey());
+          _selectedMonthIndex = 0;
+          if (_months.isNotEmpty) {
+            final m = _months.first;
+            _startDate = m.startOfMonth;
+            _endDate = m.endOfMonth;
+          }
+        });
+        _loadTransactions();
+      },
+    );
   }
 
   void _showTopBanner(BuildContext context, String message, {bool isError = false}) {
@@ -179,7 +208,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
             padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
             child: Row(
               children: [
-                if (_selectedMonthIndex != 0)
+                if (_selectedMonthIndex != 0 && _months.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(right: AppTheme.spacingSm),
                     child: IconButton(
@@ -187,9 +216,11 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       onPressed: () {
                         setState(() {
                           _selectedMonthIndex = 0;
-                          final month = _months[0];
-                          _startDate = month.startOfMonth;
-                          _endDate = month.endOfMonth;
+                          if (_months.isNotEmpty) {
+                            final month = _months[0];
+                            _startDate = month.startOfMonth;
+                            _endDate = month.endOfMonth;
+                          }
                         });
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           _scrollToSelectedMonth(0);
@@ -207,11 +238,17 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       separatorBuilder: (context, index) => const SizedBox(width: AppTheme.spacingSm),
                       itemBuilder: (context, index) {
                         final month = _months[index];
-                        final label = index == 0
-                            ? 'Tháng này'
-                            : index == 1
-                                ? 'Tháng trước'
-                                : month.toMonthYearString();
+                        String labelForIndex() {
+                          final now = DateTime.now();
+                          final currentMonthStart = DateTime(now.year, now.month, 1);
+                          final prevMonthStart = DateTime(now.year, now.month - 1, 1);
+                          final anchorStart = DateTime(month.year, month.month, 1);
+
+                          if (anchorStart == currentMonthStart) return 'Tháng này';
+                          if (anchorStart == prevMonthStart) return 'Tháng trước';
+                          return month.toMonthYearString();
+                        }
+                        final label = labelForIndex();
                         final selected = index == _selectedMonthIndex;
                         return ChoiceChip(
                           key: _monthKeys[index],

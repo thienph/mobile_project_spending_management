@@ -65,6 +65,20 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
+  void _scrollToSelectedAnchor(int index) {
+    if (index < 0 || index >= _anchorKeys.length) return;
+    final key = _anchorKeys[index];
+    final context = key.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.5,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   // Removed local week helper; repository computes anchors by data
 
   ({DateTime start, DateTime end}) _calculateDateRange(
@@ -290,6 +304,25 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       color: Colors.white,
       child: Row(
         children: [
+          if (_selectedAnchorIndex != 0)
+            Padding(
+              padding: const EdgeInsets.only(right: AppTheme.spacingSm),
+              child: IconButton(
+                icon: const Icon(Icons.keyboard_double_arrow_left),
+                onPressed: () {
+                  setState(() {
+                    _selectedAnchorIndex = 0;
+                    if (_periodAnchors.isNotEmpty) {
+                      _focusedDate = _periodAnchors[0];
+                    }
+                  });
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scrollToSelectedAnchor(0);
+                  });
+                  _loadAnalytics();
+                },
+              ),
+            ),
           Expanded(
             child: SizedBox(
               height: 44,
@@ -311,6 +344,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       setState(() {
                         _selectedAnchorIndex = index;
                         _focusedDate = _periodAnchors[index];
+                      });
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _scrollToSelectedAnchor(index);
                       });
                       _loadAnalytics();
                     },
