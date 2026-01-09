@@ -5,10 +5,12 @@ import 'package:mobile_project_spending_management/core/di/injection.dart';
 import 'package:mobile_project_spending_management/domain/entities/transaction.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/transactions/transaction_bloc.dart';
 import 'package:mobile_project_spending_management/presentation/bloc/categories/category_bloc.dart';
+import 'package:mobile_project_spending_management/presentation/bloc/analytics/analytics_bloc.dart';
 import 'package:mobile_project_spending_management/presentation/screens/home/home_screen.dart';
 import 'package:mobile_project_spending_management/presentation/screens/transactions/transaction_list_screen.dart';
 import 'package:mobile_project_spending_management/presentation/screens/transactions/add_transaction_screen.dart';
 import 'package:mobile_project_spending_management/presentation/screens/transactions/edit_transaction_screen.dart';
+import 'package:mobile_project_spending_management/presentation/screens/analytics/analytics_screen.dart';
 
 class AppRouter {
   static GoRouter router = GoRouter(
@@ -57,6 +59,14 @@ class AppRouter {
             child: EditTransactionScreen(transaction: transaction),
           );
         },
+      ),
+      GoRoute(
+        path: '/analytics',
+        name: 'analytics',
+        builder: (context, state) => BlocProvider(
+          create: (context) => getIt<AnalyticsBloc>(),
+          child: const AnalyticsScreen(),
+        ),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

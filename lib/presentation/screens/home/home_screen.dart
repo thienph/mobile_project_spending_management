@@ -45,9 +45,7 @@ class HomeScreen extends StatelessWidget {
                   title: 'Phân tích',
                   subtitle: 'Thống kê chi tiêu',
                   color: AppTheme.accentColor,
-                  onTap: () {
-                    _showTopBanner(context, 'Tính năng sắp ra mắt');
-                  },
+                  onTap: () => context.goNamed('analytics'),
                 ),
                 _FeatureCard(
                   icon: Icons.flag,
