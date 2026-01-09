@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_project_spending_management/core/theme/app_theme.dart';
 import 'package:mobile_project_spending_management/core/utils/number_extensions.dart';
 import 'package:mobile_project_spending_management/domain/entities/category_breakdown.dart';
@@ -34,6 +35,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/'),
+        ),
         title: const Text('Phân tích'),
         actions: [
           IconButton(
