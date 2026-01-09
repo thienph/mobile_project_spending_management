@@ -24,6 +24,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   String _filterType = 'all'; // 'all', 'income', 'expense'
   String _searchQuery = '';
   late List<DateTime> _months; // Month anchors (first day of month)
+  late List<GlobalKey> _monthKeys;
   int _selectedMonthIndex = 0; // 0 = this month
   Map<String, double>? _balance; // Cache the balance
 
@@ -32,6 +33,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     super.initState();
     final now = DateTime.now();
     _months = List.generate(12, (i) => DateTime(now.year, now.month - i, 1));
+    _monthKeys = List.generate(12, (_) => GlobalKey());
     _startDate = now.startOfMonth;
     _endDate = now.endOfMonth;
     _loadTransactions();
@@ -70,11 +72,24 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     _loadTransactions();
   }
 
+  void _scrollToSelectedMonth(int index) {
+    final key = _monthKeys[index];
+    final context = key.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.5,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Giao dịch'),
+        title: const Text('Lịch sử giao dịch'),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -92,7 +107,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 _loadTransactions();
               },
               decoration: InputDecoration(
-                hintText: 'Tìm kiếm giao dịch...',
+                hintText: 'Tìm kiếm...',
                 filled: true,
                 fillColor: AppTheme.backgroundColor,
                 prefixIcon: const Icon(Icons.search),
@@ -106,12 +121,12 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                       )
                     : null,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                  borderSide: const BorderSide(color: AppTheme.borderColor),
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: AppTheme.spacingMd,
-                  vertical: AppTheme.spacingMd,
+                  vertical: 0,
                 ),
               ),
             ),
@@ -119,53 +134,93 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           // Month Selector
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
-            child: SizedBox(
-              height: 44,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _months.length,
-                separatorBuilder: (context, index) => const SizedBox(width: AppTheme.spacingSm),
-                itemBuilder: (context, index) {
-                  final month = _months[index];
-                  final label = index == 0
-                      ? 'Tháng này'
-                      : index == 1
-                          ? 'Tháng trước'
-                          : month.toMonthYearString();
-                  final selected = index == _selectedMonthIndex;
-                  return ChoiceChip(
-                    selected: selected,
-                    label: Text(label),
-                    onSelected: (value) {
-                      if (!value) return;
-                      setState(() {
-                        _selectedMonthIndex = index;
-                        _startDate = month.startOfMonth;
-                        _endDate = month.endOfMonth;
-                      });
-                      _loadTransactions();
-                    },
-                  );
-                },
-              ),
+            child: Row(
+              children: [
+                if (_selectedMonthIndex != 0)
+                  Padding(
+                    padding: const EdgeInsets.only(right: AppTheme.spacingSm),
+                    child: IconButton(
+                      icon: const Icon(Icons.keyboard_double_arrow_left),
+                      onPressed: () {
+                        setState(() {
+                          _selectedMonthIndex = 0;
+                          final month = _months[0];
+                          _startDate = month.startOfMonth;
+                          _endDate = month.endOfMonth;
+                        });
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _scrollToSelectedMonth(0);
+                        });
+                        _loadTransactions();
+                      },
+                    ),
+                  ),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _months.length,
+                      separatorBuilder: (context, index) => const SizedBox(width: AppTheme.spacingSm),
+                      itemBuilder: (context, index) {
+                        final month = _months[index];
+                        final label = index == 0
+                            ? 'Tháng này'
+                            : index == 1
+                                ? 'Tháng trước'
+                                : month.toMonthYearString();
+                        final selected = index == _selectedMonthIndex;
+                        return ChoiceChip(
+                          key: _monthKeys[index],
+                          showCheckmark: false,
+                          selected: selected,
+                          label: Text(label),
+                          onSelected: (value) {
+                            if (!value) return;
+                            setState(() {
+                              _selectedMonthIndex = index;
+                              _startDate = month.startOfMonth;
+                              _endDate = month.endOfMonth;
+                            });
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _scrollToSelectedMonth(index);
+                            });
+                            _loadTransactions();
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          // Filter Chips
+          const SizedBox(height: AppTheme.spacingMd),
+          // Filter SegmentedButton
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingMd),
-            child: Row(
-              children: ['all', 'income', 'expense']
-                  .map((type) => Padding(
-                        padding: const EdgeInsets.only(right: AppTheme.spacingSm),
-                        child: FilterChip(
-                          selected: _filterType == type,
-                          onSelected: (selected) => _filterByType(type),
-                          label: Text(
-                            type == 'all' ? 'Tất cả' : (type == 'income' ? 'Thu' : 'Chi'),
-                          ),
-                        ),
-                      ))
-                  .toList(),
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'all', label: Text('Tất cả')),
+                  ButtonSegment(value: 'income', label: Text('Thu nhập')),
+                  ButtonSegment(value: 'expense', label: Text('Chi tiêu')),
+                ],
+                selected: {_filterType},
+                onSelectionChanged: (Set<String> newSelection) {
+                  _filterByType(newSelection.first);
+                },
+                style: SegmentedButton.styleFrom(
+                  backgroundColor: AppTheme.backgroundColor,
+                  selectedBackgroundColor: _filterType == 'income'
+                      ? AppTheme.incomeColor
+                      : _filterType == 'expense'
+                          ? AppTheme.expenseColor
+                          : AppTheme.primaryColor,
+                  selectedForegroundColor: Colors.white,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: AppTheme.spacingMd),
