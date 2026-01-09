@@ -52,14 +52,29 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     _selectedDate = widget.transaction.date;
     _transactionType = widget.transaction.type;
     _selectedCategoryId = widget.transaction.categoryId;
+
+    _descriptionController.addListener(_onFieldChanged);
+    _amountController.addListener(_onFieldChanged);
   }
 
   @override
   void dispose() {
+    _descriptionController.removeListener(_onFieldChanged);
+    _amountController.removeListener(_onFieldChanged);
     _descriptionController.dispose();
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  void _onFieldChanged() {
+    setState(() {});
+  }
+
+  bool get _isFormValid {
+    final cleanAmount = _amountController.text.replaceAll('.', '');
+    final amount = double.tryParse(cleanAmount);
+    return amount != null && amount > 0 && _descriptionController.text.isNotEmpty;
   }
 
   void _selectDate() async {
@@ -319,7 +334,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
                   return SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: isLoading ? null : _submitTransaction,
+                      onPressed: (isLoading || !_isFormValid) ? null : _submitTransaction,
                       child: isLoading
                           ? const SizedBox(
                               height: 24,

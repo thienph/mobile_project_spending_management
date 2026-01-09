@@ -34,14 +34,32 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     _descriptionController = TextEditingController();
     _amountController = TextEditingController();
     _noteController = TextEditingController();
+
+    _descriptionController.addListener(_onFieldChanged);
+    _amountController.addListener(_onFieldChanged);
   }
 
   @override
   void dispose() {
+    _descriptionController.removeListener(_onFieldChanged);
+    _amountController.removeListener(_onFieldChanged);
     _descriptionController.dispose();
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  void _onFieldChanged() {
+    setState(() {});
+  }
+
+  bool get _isFormValid {
+    final cleanAmount = _amountController.text.replaceAll('.', '');
+    final amount = double.tryParse(cleanAmount);
+    return amount != null &&
+        amount > 0 &&
+        _descriptionController.text.isNotEmpty &&
+        _selectedCategoryId != null;
   }
 
   void _selectDate() async {
@@ -269,7 +287,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   return SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: isLoading ? null : _submitTransaction,
+                      onPressed: (isLoading || !_isFormValid) ? null : _submitTransaction,
                       child: isLoading
                           ? const SizedBox(
                               height: 24,
