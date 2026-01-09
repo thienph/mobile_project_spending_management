@@ -174,27 +174,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget _buildSummaryCard(AnalyticsLoaded state) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacingLg),
+        padding: const EdgeInsets.all(AppTheme.spacingSm),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildSummaryItem(
-                  'Thu nhập',
-                  state.summary.totalIncome,
-                  AppTheme.incomeColor,
-                  Icons.arrow_upward,
-                ),
-                _buildSummaryItem(
-                  'Chi tiêu',
-                  state.summary.totalExpense,
-                  AppTheme.expenseColor,
-                  Icons.arrow_downward,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppTheme.spacingLg),
             Container(
               padding: const EdgeInsets.all(AppTheme.spacingMd),
               decoration: BoxDecoration(
@@ -204,7 +187,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 borderRadius: BorderRadius.circular(AppTheme.radiusMd),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
                     'Số dư',
@@ -213,10 +196,11 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                       fontWeight: AppTheme.fontWeightSemiBold,
                     ),
                   ),
+                  const SizedBox(width: AppTheme.spacingMd),
                   Text(
                     state.summary.balance.toCurrency(),
                     style: TextStyle(
-                      fontSize: AppTheme.fontSizeXl,
+                      fontSize: AppTheme.fontSizeXxl,
                       fontWeight: AppTheme.fontWeightBold,
                       color: state.summary.balance >= 0
                           ? AppTheme.incomeColor
@@ -226,12 +210,32 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: AppTheme.spacingMd),
-            Text(
-              '${state.summary.transactionCount} giao dịch',
-              style: const TextStyle(
-                color: AppTheme.textSecondaryColor,
-                fontSize: AppTheme.fontSizeSm,
+            const SizedBox(height: AppTheme.spacingSm),
+            Row(
+              children: [
+                _buildSummaryItem(
+                  'Thu nhập',
+                  state.summary.totalIncome,
+                  AppTheme.incomeColor,
+                  Icons.arrow_upward,
+                ),
+                const SizedBox(width: AppTheme.spacingSm),
+                _buildSummaryItem(
+                  'Chi tiêu',
+                  state.summary.totalExpense,
+                  AppTheme.expenseColor,
+                  Icons.arrow_downward,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppTheme.spacingSm),
+            Center(
+              child: Text(
+                '${state.summary.transactionCount} giao dịch',
+                style: const TextStyle(
+                  color: AppTheme.textSecondaryColor,
+                  fontSize: AppTheme.fontSizeSm,
+                ),
               ),
             ),
           ],
@@ -244,15 +248,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       String label, double amount, Color color, IconData icon) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(AppTheme.spacingMd),
+        padding: const EdgeInsets.all(AppTheme.spacingSm),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(icon, size: 16, color: color),
                 const SizedBox(width: AppTheme.spacingXs),
