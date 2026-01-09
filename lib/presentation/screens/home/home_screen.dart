@@ -26,11 +26,6 @@ class HomeScreen extends StatelessWidget {
             const Spacer(),
 
             // Feature Grid
-            Text(
-              'Tính năng chính',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: AppTheme.spacingMd),
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
