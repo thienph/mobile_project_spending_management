@@ -58,13 +58,17 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           );
     }
     
-    // Load balance
-    context.read<TransactionBloc>().add(
-          LoadBalanceEvent(
-            startDate: _startDate,
-            endDate: _endDate,
-          ),
-        );
+    // Load balance (in parallel, doesn't affect transaction display)
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        context.read<TransactionBloc>().add(
+              LoadBalanceEvent(
+                startDate: _startDate,
+                endDate: _endDate,
+              ),
+            );
+      }
+    });
   }
 
   void _filterByType(String type) {
@@ -228,9 +232,8 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           Expanded(
             child: BlocConsumer<TransactionBloc, TransactionState>(
               listener: (context, state) {
-                // Cache transactions when loaded
-                 // Cache balance when it's loaded
-                if (state is BalanceLoaded) {
+                // Cache balance when it's loaded
+                if (state is TransactionLoaded && state.balance != null) {
                   setState(() {
                     _balance = state.balance;
                   });
@@ -240,16 +243,19 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Thêm giao dịch thành công')),
                   );
+                  _loadTransactions();
                 }
                 if (state is TransactionDeleted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Xóa giao dịch thành công')),
                   );
+                  _loadTransactions();
                 }
                 if (state is TransactionUpdated) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Cập nhật giao dịch thành công')),
                   );
+                  _loadTransactions();
                 }
               },
               builder: (context, state) {
@@ -282,6 +288,10 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 // Show transactions (from cache or state)
                 if (state is TransactionLoaded) {
                   final transactions = state.transactions;
+                  if (state.balance != null) {
+                    _balance = state.balance;
+                  }
+                  
                   if (transactions.isEmpty) {
                     return Center(
                       child: Column(

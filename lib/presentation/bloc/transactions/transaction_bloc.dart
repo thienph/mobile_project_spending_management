@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile_project_spending_management/domain/entities/transaction.dart';
 import 'package:mobile_project_spending_management/domain/repositories/transaction_repository.dart';
 import 'package:mobile_project_spending_management/domain/usecases/transactions/add_transaction.dart';
 import 'package:mobile_project_spending_management/domain/usecases/transactions/delete_transaction.dart';
@@ -13,6 +14,9 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   final UpdateTransaction updateTransaction;
   final DeleteTransaction deleteTransaction;
   final TransactionRepository repository;
+
+  // Keep track of current transactions to preserve them when loading balance
+  List<Transaction> _currentTransactions = [];
 
   TransactionBloc({
     required this.getTransactions,
@@ -42,7 +46,10 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
 
     result.fold(
       (failure) => emit(TransactionError(failure.message)),
-      (transactions) => emit(TransactionLoaded(transactions)),
+      (transactions) {
+        _currentTransactions = transactions;
+        emit(TransactionLoaded(transactions));
+      },
     );
   }
 
@@ -103,6 +110,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
                 (t.note?.toLowerCase().contains(event.query.toLowerCase()) ?? false))
             .toList();
 
+        _currentTransactions = filtered;
         emit(TransactionLoaded(filtered));
       },
     );
@@ -119,7 +127,14 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
 
     result.fold(
       (failure) => emit(TransactionError(failure.message)),
-      (balance) => emit(BalanceLoaded(balance)),
+      (balance) {
+        // Preserve current transactions and add balance info
+        if (_currentTransactions.isNotEmpty) {
+          emit(TransactionLoaded(_currentTransactions, balance: balance));
+        } else {
+          emit(BalanceLoaded(balance));
+        }
+      },
     );
   }
 }

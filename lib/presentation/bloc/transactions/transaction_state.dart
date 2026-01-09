@@ -17,11 +17,12 @@ class TransactionLoading extends TransactionState {
 
 class TransactionLoaded extends TransactionState {
   final List<Transaction> transactions;
+  final Map<String, double>? balance;
 
-  const TransactionLoaded(this.transactions);
+  const TransactionLoaded(this.transactions, {this.balance});
 
   @override
-  List<Object?> get props => [transactions];
+  List<Object?> get props => [transactions, balance];
 }
 
 class TransactionError extends TransactionState {

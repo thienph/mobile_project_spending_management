@@ -42,6 +42,9 @@ dependencies:
   # Error Handling
   dartz: ^0.10.1
   
+  # Collections utilities
+  collection: ^1.19.0
+  
   # Database
   drift: ^2.20.3
   sqlite3_flutter_libs: ^0.5.24
