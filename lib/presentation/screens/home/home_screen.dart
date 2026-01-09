@@ -46,9 +46,7 @@ class HomeScreen extends StatelessWidget {
                   subtitle: 'Thống kê chi tiêu',
                   color: AppTheme.accentColor,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tính năng sắp ra mắt')),
-                    );
+                    _showTopBanner(context, 'Tính năng sắp ra mắt');
                   },
                 ),
                 _FeatureCard(
@@ -57,9 +55,7 @@ class HomeScreen extends StatelessWidget {
                   subtitle: 'Tiết kiệm tiền',
                   color: AppTheme.successColor,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tính năng sắp ra mắt')),
-                    );
+                    _showTopBanner(context, 'Tính năng sắp ra mắt');
                   },
                 ),
                 _FeatureCard(
@@ -68,9 +64,7 @@ class HomeScreen extends StatelessWidget {
                   subtitle: 'Thông báo chi tiêu',
                   color: AppTheme.warningColor,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Tính năng sắp ra mắt')),
-                    );
+                    _showTopBanner(context, 'Tính năng sắp ra mắt');
                   },
                 ),
               ],
@@ -154,6 +148,24 @@ class HomeScreen extends StatelessWidget {
       const SizedBox(height: AppTheme.spacingXs),
       Text(amount.toCurrency(), style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: AppTheme.fontSizeLg)),
     ]);
+  }
+
+  void _showTopBanner(BuildContext context, String message, {bool isError = false}) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: isError ? AppTheme.errorColor : AppTheme.primaryColor,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.fromLTRB(
+          AppTheme.spacingMd,
+          AppTheme.spacingMd,
+          AppTheme.spacingMd,
+          screenHeight - 150,
+        ),
+      ),
+    );
   }
 }
 

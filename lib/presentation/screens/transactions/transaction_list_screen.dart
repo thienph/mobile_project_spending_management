@@ -91,6 +91,24 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     }
   }
 
+  void _showTopBanner(BuildContext context, String message, {bool isError = false}) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: isError ? AppTheme.errorColor : AppTheme.successColor,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.fromLTRB(
+          AppTheme.spacingMd,
+          AppTheme.spacingMd,
+          AppTheme.spacingMd,
+          screenHeight - 150,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -242,21 +260,15 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 }
                 // Show success messages (transaction changes are auto-reloaded by BLoC)
                 if (state is TransactionAdded) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Thêm giao dịch thành công')),
-                  );
+                  _showTopBanner(context, 'Thêm giao dịch thành công');
                   _loadTransactions();
                 }
                 if (state is TransactionDeleted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Xóa giao dịch thành công')),
-                  );
+                  _showTopBanner(context, 'Xóa giao dịch thành công');
                   _loadTransactions();
                 }
                 if (state is TransactionUpdated) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Cập nhật giao dịch thành công')),
-                  );
+                  _showTopBanner(context, 'Cập nhật giao dịch thành công');
                   _loadTransactions();
                 }
               },

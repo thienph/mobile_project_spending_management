@@ -78,16 +78,12 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     final cleanAmount = _amountController.text.replaceAll('.', '');
     final amount = double.tryParse(cleanAmount);
     if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập số tiền hợp lệ')),
-      );
+      _showTopBanner(context, 'Vui lòng nhập số tiền hợp lệ', isError: true);
       return;
     }
 
     if (_descriptionController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập mô tả')),
-      );
+      _showTopBanner(context, 'Vui lòng nhập mô tả', isError: true);
       return;
     }
 
@@ -132,6 +128,24 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
     );
   }
 
+  void _showTopBanner(BuildContext context, String message, {bool isError = false}) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: isError ? AppTheme.errorColor : AppTheme.successColor,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.fromLTRB(
+          AppTheme.spacingMd,
+          AppTheme.spacingMd,
+          AppTheme.spacingMd,
+          screenHeight - 150,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,19 +166,21 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       body: BlocListener<TransactionBloc, TransactionState>(
         listener: (context, state) {
           if (state is TransactionUpdated) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cập nhật giao dịch thành công')),
-            );
-            context.pop(true); // Return true to indicate success
+            _showTopBanner(context, 'Cập nhật giao dịch thành công');
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted) {
+                context.pop(true); // Return true to indicate success
+              }
+            });
           } else if (state is TransactionDeleted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Xóa giao dịch thành công')),
-            );
-            context.pop(true); // Return true to indicate success
+            _showTopBanner(context, 'Xóa giao dịch thành công');
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted) {
+                context.pop(true); // Return true to indicate success
+              }
+            });
           } else if (state is TransactionError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Lỗi: ${state.message}')),
-            );
+            _showTopBanner(context, 'Lỗi: ${state.message}', isError: true);
           }
         },
         child: SingleChildScrollView(
