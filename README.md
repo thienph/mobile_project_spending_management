@@ -1,12 +1,12 @@
 # Quản lý Thu Chi - Ứng dụng Mobile
 
-Ứng dụng quản lý thu chi cá nhân, phân tích tài chính, đặt mục tiêu tiết kiệm và cảnh báo chi tiêu được xây dựng bằng Flutter.
+Ứng dụng quản lý thu chi cá nhân được xây dựng bằng Flutter, hỗ trợ người dùng theo dõi giao dịch tài chính và phân tích chi tiêu một cách trực quan.
 
-## Tính năng
+> **Phiên bản**: MVP1
 
-- Theo dõi thu chi: Ghi nhận, chỉnh sửa, xóa giao dịch thu/chi
-- Phân tích tài chính: Biểu đồ, thống kê, báo cáo theo ngày/tuần/tháng/năm
-- Cảnh báo chi tiêu: Thông báo khi vượt ngân sách hoặc đạt mục tiêu
+## Mô tả ứng dụng
+
+ [Xem mô tả chi tiết tại PRODUCT.md](PRODUCT.md)
 
 ## Kiến trúc
 
@@ -64,16 +64,34 @@ Bảng dữ liệu (Drift):
 
 ## Tech Stack
 
-- **Framework**: Flutter 3.10+
-- **Language**: Dart 3.10+
-- **State Management**: flutter_bloc 8.1+
-- **Database**: Drift 2.20+
-- **Navigation**: go_router 14.6+
-- **DI**: get_it 8.0+
-- **Charts**: fl_chart 0.69+
-- **Notifications**: flutter_local_notifications 18.0+
-- **Firebase**: firebase_core, firebase_crashlytics
-- **Testing**: bloc_test, mocktail
+### Core Technologies
+- **Framework**: Flutter 3.10.4+ (Cross-platform mobile development)
+- **Language**: Dart 3.10.4+
+- **Architecture**: Clean Architecture (4 layers: core, data, domain, presentation)
+
+### State Management & Navigation
+- **State**: flutter_bloc 8.1+ with Equatable
+- **Navigation**: go_router 14.6+ (declarative routing)
+- **DI**: get_it 8.0+ (service locator pattern)
+
+### Data & Persistence
+- **Database**: Drift 2.20+ (type-safe SQLite wrapper)
+- **Storage**: SQLite3 (offline-first architecture)
+- **Error Handling**: dartz (functional Either<Failure, Success>)
+
+### UI & Visualization
+- **Design**: Material Design 3
+- **Charts**: fl_chart 0.69+ (pie charts, line charts)
+- **Date/Number**: intl 0.20+ (localization)
+
+### Quality & Monitoring
+- **Testing**: bloc_test 9.1+, mocktail 1.0+
+- **Crashlytics**: firebase_crashlytics 4.1+ (error tracking)
+- **Linting**: flutter_lints 6.0+
+
+### Planned Features
+- **Notifications**: flutter_local_notifications 18.0+ (local alerts)
+- **UUID**: uuid 4.5+ (unique identifiers)
 
 ## Cài đặt
 
@@ -130,9 +148,15 @@ flutter test --coverage
 # Generate code (khi thay đổi database)
 dart run build_runner build --delete-conflicting-outputs
 
-# Build APK (Android)
+# Clean build (khi gặp lỗi build)
+flutter clean && flutter pub get
+
+# Build Android APK
 flutter build apk --release
 
-# Build iOS
+# Build Android App Bundle (Google Play)
+flutter build appbundle --release
+
+# Build iOS (yêu cầu macOS + Xcode)
 flutter build ios --release
 ```
