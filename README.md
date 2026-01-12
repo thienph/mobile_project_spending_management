@@ -6,11 +6,11 @@
 
 ## Mô tả ứng dụng
 
- [Xem mô tả chi tiết tại PRODUCT.md](PRODUCT.md)
+ [Xem mô tả chi tiết tại PRODUCT.md](./docs/PRODUCT.md)
 
 ## Kiến trúc
 
-### Clean Architecture Layers
+### Kiến trúc 4 Layers
 
 ```
 lib/
@@ -67,7 +67,7 @@ Bảng dữ liệu (Drift):
 ### Core Technologies
 - **Framework**: Flutter 3.10.4+ (Cross-platform mobile development)
 - **Language**: Dart 3.10.4+
-- **Architecture**: Clean Architecture (4 layers: core, data, domain, presentation)
+- **Architecture**: 4 layers (core, data, domain, presentation)
 
 ### State Management & Navigation
 - **State**: flutter_bloc 8.1+ with Equatable
